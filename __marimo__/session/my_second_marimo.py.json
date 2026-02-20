@@ -1,0 +1,151 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.19.6"
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "87b22ad06b5b96fe26a6c0bc974680b5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"trabajar-con-vcfs\">Trabajar con VCFs</h1>\n<span class=\"paragraph\">Me descargu\u00e9 uno de prueba de <em><a href=\"https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/\" rel=\"noopener noreferrer\" target=\"_blank\">https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/</a></em>, el chr22 a sugerencia de Gepeto.</span>\n<span class=\"paragraph\">Luego copi\u00e9 las funciones necesarias de la librer\u00eda <strong>tomato25</strong> para hacer un <strong>pca</strong> y <strong>pcoa</strong> .</span>\n<span class=\"paragraph\">Aprend\u00ed a abrir el archivo, coger solo los 10 primeros individuos y a crear vcfs m\u00e1s peque\u00f1os a trav\u00e9s de <strong>Git Bash:</strong> <em>cat vcf_de_prueba | head -n 20000 &gt; vcf_prueba_20mil.vcf</em></span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "5e40faa990123e5b21f4e9b073ae2516",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"funciones-copiadas-de-tomato25\">Funciones copiadas de <strong>tomato25</strong>:</h2>\n<span class=\"paragraph\">Queremos solo <strong>do_pcoa</strong>, pero como depende de otras las traemos tambi\u00e9n.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "2792966eb0ae510ec1eab339033488a1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Cargar VCF y visualizar do_pcoa:</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "2d34a439f1b22542160e731de20835ab",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "071584d8e38a4fd0444463461388a754",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "b3b0ed88159f544763e8134192c75cb6",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "73098f06663472fc59e249c658d82c88",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "a77aeecacf5f679d0b930e411061e9fa",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "57f24f34dd718fb9b2a912f6b728fb2b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "08d27fea50d74d55223e8341206cd65d",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stdout",
+          "text": "data:\nindividuos:  2504\n['HG00096' 'HG00097' 'HG00099' ... 'NA21142' 'NA21143' 'NA21144']\n\nless_data:\nindividuos:  10\n[np.str_('HG00096'), np.str_('HG00097'), np.str_('HG00099'), np.str_('HG00100'), np.str_('HG00101'), np.str_('HG00102'), np.str_('HG00103'), np.str_('HG00105'), np.str_('HG00106'), np.str_('HG00107')]\n",
+          "mimetype": "text/plain"
+        }
+      ]
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "15a5efbb7b7e8adabebab648f4f2a52d",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "exception",
+          "evalue": "alleles must have the same number of rows as gts",
+          "traceback": []
+        }
+      ],
+      "console": [
+        {
+          "type": "stream",
+          "name": "stderr",
+          "text": "<span class=\"codehilite\"><div class=\"highlight\"><pre><span></span><span class=\"gt\">Traceback (most recent call last):</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\marimo\\_runtime\\executor.py&quot;</span>, line <span class=\"m\">138</span>, in <span class=\"n\">execute_cell</span>\n<span class=\"w\">    </span><span class=\"n\">exec</span><span class=\"p\">(</span><span class=\"n\">cell</span><span class=\"o\">.</span><span class=\"n\">body</span><span class=\"p\">,</span> <span class=\"n\">glbls</span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"pm\">~~~~^^^^^^^^^^^^^^^^^^</span>\n  File <span class=\"nb\">&quot;C:\\Users\\karliuski\\AppData\\Local\\Temp\\marimo_15812\\__marimo__cell_Kclp_.py&quot;</span>, line <span class=\"m\">2</span>, in <span class=\"n\">&lt;module&gt;</span>\n<span class=\"w\">    </span><span class=\"n\">new_pcoa</span> <span class=\"o\">=</span> <span class=\"n\">do_pcoa</span><span class=\"p\">(</span><span class=\"n\">data</span><span class=\"p\">,</span> <span class=\"n\">desired_samples</span><span class=\"o\">=</span><span class=\"n\">less_data</span><span class=\"p\">)</span> <span class=\"c1\"># Con solo los 10 primeros individuos</span>\n  File <span class=\"nb\">&quot;C:\\Users\\karliuski\\AppData\\Local\\Temp\\marimo_15812\\__marimo__cell_SFPL_.py&quot;</span>, line <span class=\"m\">28</span>, in <span class=\"n\">do_pcoa</span>\n<span class=\"w\">    </span><span class=\"n\">dists</span> <span class=\"o\">=</span> <span class=\"n\">calc_kosman_dists</span><span class=\"p\">(</span>\n<span class=\"w\">    </span>    <span class=\"n\">variants</span><span class=\"p\">,</span>\n<span class=\"w\">    </span>    <span class=\"n\">use_approx_embedding_algorithm</span><span class=\"o\">=</span><span class=\"n\">use_approx_embedding_algorithm</span><span class=\"p\">,</span>\n<span class=\"w\">    </span>    <span class=\"n\">num_processes</span><span class=\"o\">=</span><span class=\"n\">num_processes</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n  File <span class=\"nb\">&quot;C:\\Users\\karliuski\\AppData\\Local\\Temp\\marimo_15812\\__marimo__cell_Xref_.py&quot;</span>, line <span class=\"m\">4</span>, in <span class=\"n\">calc_kosman_dists</span>\n<span class=\"w\">    </span><span class=\"n\">dists</span> <span class=\"o\">=</span> <span class=\"n\">pynei</span><span class=\"o\">.</span><span class=\"n\">calc_pairwise_kosman_dists</span><span class=\"p\">(</span>\n<span class=\"w\">    </span>    <span class=\"n\">variants</span><span class=\"p\">,</span>\n<span class=\"w\">    </span>    <span class=\"n\">num_processes</span><span class=\"o\">=</span><span class=\"n\">num_processes</span><span class=\"p\">,</span>\n<span class=\"w\">    </span>    <span class=\"n\">use_approx_embedding_algorithm</span><span class=\"o\">=</span><span class=\"n\">use_approx_embedding_algorithm</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\dists.py&quot;</span>, line <span class=\"m\">510</span>, in <span class=\"n\">calc_pairwise_kosman_dists</span>\n<span class=\"w\">    </span><span class=\"k\">return</span> <span class=\"n\">_calc_pairwise_dists</span><span class=\"p\">(</span>\n<span class=\"w\">    </span>    <span class=\"n\">variants</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"o\">...&lt;</span><span class=\"mi\">2</span> <span class=\"n\">lines</span><span class=\"o\">&gt;...</span>\n<span class=\"w\">    </span>    <span class=\"n\">use_approx_embedding_algorithm</span><span class=\"o\">=</span><span class=\"n\">use_approx_embedding_algorithm</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\dists.py&quot;</span>, line <span class=\"m\">456</span>, in <span class=\"n\">_calc_pairwise_dists</span>\n<span class=\"w\">    </span><span class=\"n\">dists</span> <span class=\"o\">=</span> <span class=\"n\">_calc_pairwise_dists_exact</span><span class=\"p\">(</span>\n<span class=\"w\">    </span>    <span class=\"n\">variants</span><span class=\"p\">,</span>\n<span class=\"w\">    </span>    <span class=\"n\">dist_pipeline</span><span class=\"o\">=</span><span class=\"n\">pipeline</span><span class=\"p\">,</span>\n<span class=\"w\">    </span>    <span class=\"n\">num_processes</span><span class=\"o\">=</span><span class=\"n\">num_processes</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\dists.py&quot;</span>, line <span class=\"m\">256</span>, in <span class=\"n\">_calc_pairwise_dists_exact</span>\n<span class=\"w\">    </span><span class=\"n\">dists</span> <span class=\"o\">=</span> <span class=\"n\">dist_pipeline</span><span class=\"o\">.</span><span class=\"n\">map_and_reduce</span><span class=\"p\">(</span><span class=\"n\">variants</span><span class=\"p\">,</span> <span class=\"n\">num_processes</span><span class=\"o\">=</span><span class=\"n\">num_processes</span><span class=\"p\">)</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\pipeline.py&quot;</span>, line <span class=\"m\">85</span>, in <span class=\"n\">map_and_reduce</span>\n<span class=\"w\">    </span><span class=\"k\">return</span> <span class=\"bp\">self</span><span class=\"o\">.</span><span class=\"n\">_process_vars</span><span class=\"p\">(</span><span class=\"nb\">vars</span><span class=\"p\">,</span> <span class=\"n\">num_processes</span><span class=\"p\">)</span>\n<span class=\"w\">           </span><span class=\"pm\">~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\pipeline.py&quot;</span>, line <span class=\"m\">66</span>, in <span class=\"n\">_process_vars</span>\n<span class=\"w\">    </span><span class=\"n\">result</span> <span class=\"o\">=</span> <span class=\"n\">functools</span><span class=\"o\">.</span><span class=\"n\">reduce</span><span class=\"p\">(</span>\n<span class=\"w\">    </span>    <span class=\"bp\">self</span><span class=\"o\">.</span><span class=\"n\">reduce_funct</span><span class=\"p\">,</span> <span class=\"n\">processed_chunks</span><span class=\"p\">,</span> <span class=\"bp\">self</span><span class=\"o\">.</span><span class=\"n\">reduce_initializer</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\variants.py&quot;</span>, line <span class=\"m\">461</span>, in <span class=\"n\">_resize_chunks</span>\n<span class=\"w\">    </span><span class=\"n\">buffered_chunk</span><span class=\"p\">,</span> <span class=\"n\">no_chunks_remaining</span> <span class=\"o\">=</span> <span class=\"n\">_fill_buffer</span><span class=\"p\">(</span>\n<span class=\"w\">                                          </span><span class=\"pm\">~~~~~~~~~~~~^</span>\n<span class=\"w\">    </span>    <span class=\"n\">buffered_chunk</span><span class=\"p\">,</span> <span class=\"n\">chunks</span><span class=\"p\">,</span> <span class=\"n\">desired_num_rows</span>\n<span class=\"w\">        </span><span class=\"pm\">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"pm\">^</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\variants.py&quot;</span>, line <span class=\"m\">413</span>, in <span class=\"n\">_fill_buffer</span>\n<span class=\"w\">    </span><span class=\"k\">for</span> <span class=\"n\">chunk</span> <span class=\"ow\">in</span> <span class=\"n\">chunks</span><span class=\"p\">:</span>\n<span class=\"w\">                 </span><span class=\"pm\">^^^^^^</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\var_filters.py&quot;</span>, line <span class=\"m\">247</span>, in <span class=\"n\">iter_vars_chunks</span>\n<span class=\"w\">    </span><span class=\"k\">for</span> <span class=\"n\">chunk</span> <span class=\"ow\">in</span> <span class=\"bp\">self</span><span class=\"o\">.</span><span class=\"n\">_chunks</span><span class=\"p\">:</span>\n<span class=\"w\">                 </span><span class=\"pm\">^^^^^^^^^^^^</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\variants.py&quot;</span>, line <span class=\"m\">468</span>, in <span class=\"n\">_resize_chunks</span>\n<span class=\"w\">    </span><span class=\"n\">buffered_chunk</span><span class=\"p\">,</span> <span class=\"n\">chunks_to_yield</span> <span class=\"o\">=</span> <span class=\"n\">_yield_chunks_from_buffer</span><span class=\"p\">(</span>\n<span class=\"w\">                                      </span><span class=\"pm\">~~~~~~~~~~~~~~~~~~~~~~~~~^</span>\n<span class=\"w\">    </span>    <span class=\"n\">buffered_chunk</span><span class=\"p\">,</span> <span class=\"n\">desired_num_rows</span>\n<span class=\"w\">        </span><span class=\"pm\">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>\n<span class=\"w\">    </span><span class=\"p\">)</span>\n<span class=\"w\">    </span><span class=\"pm\">^</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\variants.py&quot;</span>, line <span class=\"m\">443</span>, in <span class=\"n\">_yield_chunks_from_buffer</span>\n<span class=\"w\">    </span><span class=\"n\">chunks_to_yield</span><span class=\"o\">.</span><span class=\"n\">append</span><span class=\"p\">(</span><span class=\"n\">buffered_chunk</span><span class=\"o\">.</span><span class=\"n\">get_vars</span><span class=\"p\">(</span><span class=\"nb\">slice</span><span class=\"p\">(</span><span class=\"n\">start_row</span><span class=\"p\">,</span> <span class=\"n\">end_row</span><span class=\"p\">)))</span>\n<span class=\"w\">                           </span><span class=\"pm\">~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\variants.py&quot;</span>, line <span class=\"m\">218</span>, in <span class=\"n\">get_vars</span>\n<span class=\"w\">    </span><span class=\"k\">return</span> <span class=\"n\">VariantsChunk</span><span class=\"p\">(</span><span class=\"n\">gts</span><span class=\"o\">=</span><span class=\"n\">gts</span><span class=\"p\">,</span> <span class=\"n\">vars_info</span><span class=\"o\">=</span><span class=\"n\">vars_info</span><span class=\"p\">,</span> <span class=\"n\">alleles</span><span class=\"o\">=</span><span class=\"n\">alleles</span><span class=\"p\">)</span>\n  File <span class=\"nb\">&quot;D:\\DOCUMENTOS\\UPV\\TFG\\.venv\\Lib\\site-packages\\pynei\\variants.py&quot;</span>, line <span class=\"m\">171</span>, in <span class=\"n\">__init__</span>\n<span class=\"w\">    </span><span class=\"k\">raise</span> <span class=\"ne\">ValueError</span><span class=\"p\">(</span><span class=\"s2\">&quot;alleles must have the same number of rows as gts&quot;</span><span class=\"p\">)</span>\n<span class=\"gr\">ValueError</span>: <span class=\"n\">alleles must have the same number of rows as gts</span>\n</pre></div>\n</span>",
+          "mimetype": "application/vnd.marimo+traceback"
+        }
+      ]
+    }
+  ]
+}
