@@ -15,12 +15,13 @@ def _():
     import matplotlib.pyplot as plt # Para visualizar (2D al menos)
     import mpl_toolkits.mplot3d # Para visualizar 3D
     import pynei # Librería tutor
+    from pathlib import Path
     return PCA, load_iris, mo, np, pandas, plt, pynei
 
 
 @app.cell(hide_code=True)
 def _():
-    # EJEMPLOS DE TEXTO:
+    # # EJEMPLOS DE TEXTO:
 
     # mo.md("""
     # # This is a title
@@ -33,7 +34,176 @@ def _():
     # - Another bullet
 
     # **Bold text**, *italic text*
-    # """)
+
+    # /// details | CLICK ME!
+    # You should write the drop-downs in different blocks or they will be overlapping""")
+
+    # mo.md("""/// details | Info details 
+    #     type: info
+    # Algo extra///""")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    # Interacturando con el usuario:
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    ## Slicers y datos
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    slider = mo.ui.slider(1, 10)
+    mo.md(f"Choose a value: {slider}")
+    return (slider,)
+
+
+@app.cell
+def _(mo, slider):
+    mo.md(f"""
+    The last submited value is {slider.value}
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    abcd = mo.ui.slider(2, 10).form()
+    # Si escribo form = mo.ui.slider(1,10).form() aparece bonito y con botoncito
+    # mo.md(f"Choose a value: {form}")
+    # form
+    mo.md(f"Choose a value: {abcd}")
+    return (abcd,)
+
+
+@app.cell
+def _(abcd, mo):
+    mo.md(f"""
+    The last submitted value is {abcd.value}
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    array = mo.ui.array([
+        mo.ui.text(),
+        mo.ui.slider(1, 10),
+        mo.ui.date()
+    ])
+    array
+    return (array,)
+
+
+@app.cell
+def _(array):
+    array.value
+    return
+
+
+@app.cell
+def _():
+    # Create a form with chaining
+    # form = mo.ui.slider(1, 100).form()
+    return
+
+
+@app.cell
+def _(mo):
+    # Create a form with multiple elements
+    form = (
+        mo.md('''
+        **Your form.**
+
+        {name}
+
+        {date}
+    ''')
+        .batch(
+            name=mo.ui.text(label="name"),
+            date=mo.ui.date(label="date"),
+        )
+        .form(show_clear_button=True, bordered=False)
+    )
+    mo.md(f"Choose a value: {form}")
+    return
+
+
+@app.cell
+def _():
+    # mo.md(f"LO elegido es: ***{form}*")
+    return
+
+
+@app.cell
+def _():
+    # Instantiate a form directly
+    # form = mo.ui.form(element=mo.ui.slider(1, 100))
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    ## Cargar, mostrar y descargar archivos:
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    **Archivo .txt**
+    """)
+    return
+
+
+@app.cell
+def _(mo):
+    #Crear obj file y botón de carga
+    f = mo.ui.file(label='Upload .txt') # Se podrían cargar varios archvios entiendo con mo.ui.file([ , ]). CREO
+    f
+    return (f,)
+
+
+@app.cell
+def _(f, mo):
+    mo.md(f"Nombre archivo: {f.name()}") # Mostrar f.name() es igual a f.value[0].name
+    return
+
+
+@app.cell
+def _(f, mo):
+    mo.md(f"""Contenido: {f.contents()}""") # Mostrar f.contents() es equivalente a f.value[0].contents
+    return
+
+
+@app.cell
+def _(f, mo):
+    # DESCARGAR:
+    text_download = mo.download(
+        data=f.contents,
+        filename=f.name(),
+        mimetype="text/plain",
+        label="Download text",
+    )
+
+    mo.hstack([text_download])
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    # Ahora quiero aprender a pedirle al usuario el nombre que le quiere poner al archivo antes de descargarlo.
     return
 
 
