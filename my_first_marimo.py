@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.6"
+__generated_with = "0.21.1"
 app = marimo.App(width="medium")
 
 
@@ -16,7 +16,23 @@ def _():
     import mpl_toolkits.mplot3d # Para visualizar 3D
     import pynei # Librería tutor
     from pathlib import Path
-    return PCA, load_iris, mo, np, pandas, plt, pynei
+
+    return PCA, Path, load_iris, mo, np, pandas, plt, pynei
+
+
+@app.cell
+def _(Path):
+    project_dir = Path(__file__).parent
+    evidence_files_dir = project_dir / "archivos_pruebas"
+
+    print(project_dir)
+    print(evidence_files_dir)
+    return (evidence_files_dir,)
+
+
+@app.cell
+def _():
+    return
 
 
 @app.cell(hide_code=True)
@@ -49,6 +65,32 @@ def _(mo):
     mo.md("""
     # Interacturando con el usuario:
     """)
+    return
+
+
+@app.cell
+def _(np, plt):
+    x = np.arange(5)
+    yau = x**2
+    plt.scatter(x=x, y=yau, c='red')
+    # axer = mo.ui.matplotlib(plt.gca())
+    # axer
+    return
+
+
+@app.cell
+def _():
+    # # Filter data using the selection
+    # mask = axer.value.get_mask(x, yau)
+    # selected_x, selected_y = x[mask], yau[mask]
+    return
+
+
+@app.cell
+def _():
+    # # Check if anything is selected
+    # if axer.value:
+    #     print("Data has been selected")
     return
 
 
@@ -106,7 +148,13 @@ def _(mo):
 
 @app.cell
 def _(array):
-    array.value
+    array.value[0] # prueba para seleccionar un elemento del array
+    return
+
+
+@app.cell
+def _(array, mo):
+    mo.md(f"nombre escrito en el array: {array.value[0]}") # prueba para comprobar que se ve como quiero
     return
 
 
@@ -126,15 +174,36 @@ def _(mo):
 
         {name}
 
+        {age}
+
         {date}
     ''')
         .batch(
             name=mo.ui.text(label="name"),
+            age = mo.ui.slider(1, 10, label="age"),
             date=mo.ui.date(label="date"),
         )
         .form(show_clear_button=True, bordered=False)
     )
-    mo.md(f"Choose a value: {form}")
+    mo.md(f"{form}")
+    return (form,)
+
+
+@app.cell
+def _(form):
+    form.value
+    return
+
+
+@app.cell
+def _(form):
+
+    nombre = form.value["name"]
+    edad = form.value["age"]
+    fecha = form.value["date"]
+    print("Nombre: ", nombre, "es del tipo: ", type(nombre))
+    print("Edad: ", edad, "es del tipo: ", type(edad))
+    print("Fecha: ", fecha, "es del tipo: ", type(fecha))
     return
 
 
@@ -148,6 +217,22 @@ def _():
 def _():
     # Instantiate a form directly
     # form = mo.ui.form(element=mo.ui.slider(1, 100))
+    return
+
+
+@app.cell
+def _(mo):
+    altura = mo.ui.number(label="Altura en metros", step=0.01)
+
+    altura
+    return (altura,)
+
+
+@app.cell
+def _(altura, mo):
+    mo.md(f"""
+    {altura.value}
+    """)
     return
 
 
@@ -172,38 +257,62 @@ def _(mo):
     #Crear obj file y botón de carga
     f = mo.ui.file(label='Upload .txt') # Se podrían cargar varios archvios entiendo con mo.ui.file([ , ]). CREO
     f
-    return (f,)
-
-
-@app.cell
-def _(f, mo):
-    mo.md(f"Nombre archivo: {f.name()}") # Mostrar f.name() es igual a f.value[0].name
     return
 
 
 @app.cell
-def _(f, mo):
-    mo.md(f"""Contenido: {f.contents()}""") # Mostrar f.contents() es equivalente a f.value[0].contents
+def _():
+    # # mo.md(f"Nombre archivo: {f.name()}") # Mostrar f.name() es igual a f.value[0].name
+    # f.value[0].name = 'jj'
     return
 
 
 @app.cell
-def _(f, mo):
-    # DESCARGAR:
-    text_download = mo.download(
-        data=f.contents,
-        filename=f.name(),
-        mimetype="text/plain",
-        label="Download text",
-    )
+def _():
+    # # mo.md(f"""Contenido: {f.contents()}""") # Mostrar f.contents() es equivalente a f.value[0].contents
+    # f.name() # CONSEGUÍ CAMBIAR EL NOMBREEEEEEEEEE
+    return
 
-    mo.hstack([text_download])
+
+@app.cell
+def _():
+    # # DESCARGAR:
+    # text_download = mo.download(
+    #     data=f.contents,
+    #     filename=f.name(),
+    #     mimetype="text/plain",
+    #     label="Download text",
+    # )
+
+    # mo.hstack([text_download])
+    return
+
+
+@app.cell
+def _():
+    # Ahora quiero aprender a pedirle al usuario el nombre que le quiere poner al archivo antes de descargarlo.
+
+    # Paso 1: pedir nombre
     return
 
 
 @app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    **Archivo.pdf**
+    """)
+    return
+
+
+@app.cell
 def _():
-    # Ahora quiero aprender a pedirle al usuario el nombre que le quiere poner al archivo antes de descargarlo.
+    # mo.pdf(src=)
+    return
+
+
+@app.cell
+def _(evidence_files_dir, mo):
+    mo.image(src = evidence_files_dir / "prueba_imagen.png")
     return
 
 
@@ -269,8 +378,10 @@ def _(X, np, plt, x_pca):
     plt.title("Just points")
     plt.xlabel('sus coord en x')
     plt.ylabel('sus coord en y')
-    plt.tight_layout(rect=[0, 0, 0.5, 0.6])
-    plt.show()
+    # plt.tight_layout(rect=[0, 0, 0.5, 0.6])
+    # plt.show()
+
+
 
     #Conclusión: eligió la C1 como dim1 = coord en 'x' xq en 'y' se pierde info de algunos puntos xq se solapan
     return (y,)
@@ -327,8 +438,8 @@ def _(data_pca_iris, iris, plt):
     axs[1,1].set_xlabel('C0 (Sepal length)')
     axs[1,1].set_ylabel('C2 (Petal length)')
 
-    plt.tight_layout(h_pad=1.5, w_pad=1.5)
-    plt.show()
+    # plt.tight_layout(h_pad=1.5, w_pad=1.5)
+    # plt.show()
     return
 
 
@@ -376,7 +487,7 @@ def _(PCA, iris, plt):
     ax.yaxis.set_ticklabels([])
     ax.zaxis.set_ticklabels([])
 
-    plt.show()
+    # plt.show()
     return
 
 

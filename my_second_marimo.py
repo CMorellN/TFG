@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.6"
+__generated_with = "0.20.4"
 app = marimo.App(width="medium")
 
 
@@ -22,25 +22,26 @@ def _():
     # IMPORTACIONES:
     import marimo as mo # Para los títulitos
     import numpy as np
-    # from sklearn.decomposition import PCA
-    import pandas
-    # import matplotlib.pyplot as plt # Para visualizar (2D al menos)
-    # import mpl_toolkits.mplot3d # Para visualizar 3D
     import pynei # Librería tutor
-    # from pynei.io_vcf import load_vars
     from pathlib import Path
     # from cyvcf2 import VCF
+    import mpl_toolkits.mplot3d # Para visualizar 3D
+
     return Path, mo, pynei
 
 
-@app.cell(hide_code=True)
-def _():
-    ## Prueba de lectura de archivo cualquiera:
-    # open("XYdata.txt")
-    # for line in open("XYdata.txt"):
-    #     print(line)
-    #     break
-    return
+@app.cell
+def _(Path):
+    # Cargar el VCF de prueba:
+    project_dir = Path(__file__).parent
+    print(project_dir)
+
+    data_dir = project_dir / "VCFs_prueba"
+    print(data_dir)
+
+    archivo = data_dir / "VCF_prueba_2000.vcf"
+    print(archivo)
+    return (archivo,)
 
 
 @app.cell(hide_code=True)
@@ -77,10 +78,11 @@ def _(Variants, get_samples_with_enough_data, pynei):
         )
         pca = pynei.do_pca_with_vars(variants, transform_to_biallelic=True)
         return pca
+
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Variants, pynei):
     def get_samples_with_enough_data(variants: Variants, max_missing_rate):
         sample_stats = pynei.calc_per_sample_stats(variants)
@@ -90,10 +92,11 @@ def _(Variants, pynei):
             )
         )
         return samples_with_enough_data
+
     return (get_samples_with_enough_data,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Variants, pynei):
     def calc_kosman_dists(
         variants: Variants, use_approx_embedding_algorithm=False, num_processes=1
@@ -104,10 +107,11 @@ def _(Variants, pynei):
             use_approx_embedding_algorithm=use_approx_embedding_algorithm,
         )
         return dists
+
     return (calc_kosman_dists,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Variants, calc_kosman_dists, get_samples_with_enough_data, pynei):
     def do_pcoa(
         variants: Variants,
@@ -143,6 +147,7 @@ def _(Variants, calc_kosman_dists, get_samples_with_enough_data, pynei):
         )
         pcoa = pynei.do_pcoa(dists)
         return pcoa
+
     return (do_pcoa,)
 
 
@@ -155,11 +160,7 @@ def _(mo):
 
 
 @app.cell
-def _(Path, pynei):
-    # Cargar el VCF de prueba:
-    archivo = Path("D:/DOCUMENTOS/UPV/TFG/VCFs_prueba/vcf_prueba_2000.vcf")
-    # archivo = Path("D:/DOCUMENTOS/UPV/TFG/VCFs_prueba/vcf_prueba_20mil.vcf")
-
+def _(archivo, pynei):
     data = pynei.vars_from_vcf(vcf_path=archivo)
     print("data:")
     print(f"individuos: ", data.samples.size)
@@ -178,6 +179,42 @@ def _(data, do_pcoa, less_data):
     new_pcoa = do_pcoa(data, desired_samples=less_data) # Con solo los 10 primeros individuos
 
     print(new_pcoa)
+    return (new_pcoa,)
+
+
+@app.cell
+def _(new_pcoa):
+    print(new_pcoa.keys())
+    print(new_pcoa["projections"].iloc[:,:3])
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    ## Visualization:
+    """)
+    return
+
+
+@app.cell
+def _():
+    # # Visualizar 3D:
+    # fig = plt.figure() # crear la figura
+    # ax = fig.add_subplot(111, projection='3d') # crear un obj con el que trabajar (necesario para el 3D)
+
+    # scatter = ax.scatter(data_pca_iris3d[:,0], data_pca_iris3d[:,1], data_pca_iris3d[:,2], c='purple')
+    # ax.set_title('Esto qué carajo es')
+    # ax.set_xlabel('C0')
+    # ax.set_ylabel('C1')
+    # ax.set_zlabel('C2')
+
+    # # Nos borra los números de las coordenaas. Más limpio
+    # ax.xaxis.set_ticklabels([])
+    # ax.yaxis.set_ticklabels([])
+    # ax.zaxis.set_ticklabels([])
+
+    # plt.show()
     return
 
 
