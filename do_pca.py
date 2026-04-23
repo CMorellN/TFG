@@ -7,17 +7,18 @@ app = marimo.App(width="medium")
 @app.cell
 def _():
     # IMPORTACIONES:
-    import marimo as mo # Para los títulitos
-    import pynei # Librería tutor
-    from pathlib import Path
+    import marimo as mo 
+    import pynei # JB library
+    from pathlib import Path # used for tempfile
     import matplotlib.pyplot as plt # Para visualizar (2D al menos)
     import mpl_toolkits.mplot3d # Para visualizar 3D
-    import plotly.express as px
-    from scatter3d import Scatter3dWidget, Category, LabelListErrorResponse
-    import pandas as pd
+    # import plotly.express as px
+    from scatter3d import Scatter3dWidget, Category, LabelListErrorResponse # used for 3D visualization JB
+    import pandas # used for 3D visualization JB
     import numpy as np
+    import time # for the progress_bar in PCoA
 
-    return Category, Scatter3dWidget, mo, np, plt, pynei
+    return Category, Scatter3dWidget, mo, np, pandas, plt, pynei, time
 
 
 @app.cell
@@ -124,18 +125,18 @@ def _(Variants, calc_kosman_dists, get_samples_with_enough_data, pynei):
         pcoa = pynei.do_pcoa(dists)
         return pcoa
 
-    return (do_pcoa,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.center(mo.md("""# VCFs web space"""))
     return
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.center(mo.md("""This is a website to work with VCFs tools, customizing options, were you can visualize the results online and download them."""))
+def _():
+    # mo.center(mo.md("""# **VCFs web space**"""))
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    # mo.center(mo.md("""This is a website to work with VCFs tools, customizing options, were you can visualize the results online and download them."""))
     return
 
 
@@ -149,13 +150,61 @@ def _():
 
 @app.cell
 def _(mo):
-    button_file = mo.ui.file(multiple=True, kind='button' ,label='Select file')
-    mo.hstack([mo.md("Input VCF: "), button_file], justify="start")
-    return (button_file,)
+    from enum import Enum
+
+    # This is to provide 2 app webs. One for VCF data (snips) and another for qualitative data (like Iris Dataset)
+
+    class DataMode(Enum):
+
+        GENOMIC = "genomic" # VSC: uv run marimo run do_pca.py --port 2719 
+                            # añadir a url /?mode=genomic
+
+        QUANTITATIVE = "quantitative" # VSC: uv run marimo run do_pca.py --port 2720
+                                      # añadir a url /?mode=quantitative
+
+
+    params = mo.query_params()
+
+    mode = DataMode(params.get("mode", "genomic")) # default value
+    return DataMode, mode
+
+
+@app.cell
+def _(DataMode, mo, mode):
+    # For both cases of data:
+        # Web title
+        # Short web description
+        # Create the button 
+        # Add previos text to the button
+
+    if mode == DataMode.GENOMIC:
+        _msg_title =  mo.center(mo.md("""# **VCF web space**"""))
+        _msg_subtitle = mo.center(mo.md("""This is a website to work with Variant Call Format (VCF), running a PCA or PCoA, customizing options and visualizing the results online and downloading them."""))
+        button_file = mo.ui.file(multiple=False, kind='button', label='Select VCF file')
+        show_button_file = mo.hstack([mo.md("Input VCF: "), button_file], justify="start") 
+
+    else:
+        _msg_title =  mo.center(mo.md("""# **CSV web space**"""))
+        _msg_subtitle = mo.center(mo.md("""This is a website to work with Comma-Separated Values (CSV), running a PCA or PCoA, customizing options and visualizing the results online and downloading them.""")) 
+        button_file = mo.ui.file(multiple=False, kind='button', label='Select CSV file')
+        show_button_file =  mo.hstack([mo.md("Input quantitative data (CSV): "), button_file], justify="start")
+
+
+    # Show the title and description:
+    mo.vstack([_msg_title, _msg_subtitle])
+    return button_file, show_button_file
+
+
+@app.cell
+def _(show_button_file):
+    show_button_file # To show the button
+    return
 
 
 @app.cell
 def _(button_file, mo):
+    # To show the file name and the format to confirm:
+
     if button_file.value:
         _msg = mo.md(f"The **{button_file.value[0].name}** file has been properly upload.")
     else:
@@ -177,7 +226,7 @@ def _(button_file, pynei):
                 tmp.write(button_file.contents())
                 tmp_path = tmp.name
 
-            data = pynei.vars_from_vcf(vcf_path=tmp_path)
+            data = pynei.vars_from_vcf(vcf_path=tmp_path) # Extracting variants (snips)
 
             data
     return (data,)
@@ -204,13 +253,9 @@ def _(mo):
     slider1 = mo.ui.slider(start=0, stop=0.3, step=0.01, value=0.05, include_input=True, label='max_var_gt_missing_rate')
     slider2 = mo.ui.slider(start=0.9, stop=1, step=0.01, value=0.95, include_input=True, label='max_allowed_maf')
     slider3 = mo.ui.slider(start=0.1, stop=0.2, step=0.01, value=0.1, include_input=True, label='min_allowed_r2')
-    return slider0, slider1, slider2, slider3
 
-
-@app.cell
-def _(mo, slider0, slider1, slider2, slider3):
     mo.accordion({"**Show and edit parameters:** ": mo.vstack([slider0, slider1, slider2, slider3])})
-    return
+    return slider0, slider1, slider2, slider3
 
 
 @app.cell
@@ -222,8 +267,13 @@ def _():
 
 
 @app.cell
-def _(mo):
-    run_pca_pcoa = mo.ui.run_button(label='Run', kind='warn', full_width=True, tooltip='Click to execute the tool (PCA or PCoA) you have selected')
+def _(DataMode, mo, mode):
+    if mode == DataMode.GENOMIC:
+        color_run_pca_pcoa = 'info'
+    else:
+        color_run_pca_pcoa = 'success'
+
+    run_pca_pcoa = mo.ui.run_button(label='Run', kind=color_run_pca_pcoa, full_width=True, tooltip='Click to execute the tool (PCA or PCoA) you have selected')
     run_pca_pcoa
     return (run_pca_pcoa,)
 
@@ -233,39 +283,151 @@ def _(
     button_file,
     data,
     do_pca,
-    do_pcoa,
     dropdown_pca_pcoa,
+    get_samples_with_enough_data,
     mo,
+    pynei,
     run_pca_pcoa,
     slider0,
     slider1,
     slider2,
     slider3,
+    time,
 ):
-    if run_pca_pcoa.value:
-        if button_file.value:
+    if run_pca_pcoa.value and button_file.value:
             if dropdown_pca_pcoa.selected_key == 'PCA':
-                _msg = mo.md("*Calculating PCA...*")
-                results = do_pca(
+                # _msg = mo.md("*Calculating PCA...*")
+                with mo.status.spinner(title = "Calculating PCA..."):
+                    results = do_pca(
                                 data, 
                                 max_sample_gt_missing_rate = slider0.value,
                                 max_var_gt_missing_rate = slider1.value,
                                 max_allowed_maf = slider2.value,
                                 min_allowed_r2 = slider3.value)
-                # _msg = mo.md("") # This idea doesn't works how I thougth
+
             else:
-                _msg = mo.md("*Calculating PCoA...*")
-                results = do_pcoa(
-                                data, 
-                                max_sample_gt_missing_rate = slider0.value,
-                                max_var_gt_missing_rate = slider1.value,
-                                max_allowed_maf = slider2.value,
-                                min_allowed_r2 = slider3.value)
-        else:
-            print('run false')
-            _msg = mo.md("""Please, first upload a VCF file.""")
-    _msg
+                _steps = [
+                    "Filtrando muestras",
+                    "Filtrando variantes por datos perdidos", 
+                    "Filtrando por LD y MAF",
+                    "Calculando distancias Kosman",
+                    "Calculando PCoA"
+                ]
+                # print(_steps[0])
+                # print(type(_steps))
+            
+                _vars = data
+
+                with mo.status.progress_bar(total=5, title="Calculando PCoA...") as _bar:
+                    print("Entramos")
+                
+                    _bar.update(increment=1, subtitle="Filtrando muestras") # 1
+                    # time.sleep(0.2)
+                    _samples = get_samples_with_enough_data(data, max_missing_rate=slider0.value)
+                    _vars = pynei.var_filters.filter_samples(data, _samples)
+                    print("Paso 1 hecho")
+                
+                    _bar.update(increment=1, subtitle="Filtrando variantes por datos perdidos") # 2
+                    time.sleep(1)
+                    _vars = pynei.filter_by_missing_data(_vars, max_allowed_missing_rate=slider1.value)         
+                    print("Paso 2 hecho")
+                
+                    _bar.update(increment=1, subtitle="Filtrando por LD y MAF") # 3
+                    time.sleep(1)
+                    _vars = pynei.filter_by_ld_and_maf(_vars, max_allowed_maf=slider2.value, min_allowed_r2=slider3.value)
+                    print("Paso 3 hecho")
+
+                    print(" Pre 4")
+                    _bar.update(increment=1, subtitle="Calculando distancias Kosman") # 4
+                    time.sleep(1)
+                    _dists = pynei.calc_pairwise_kosman_dists(_vars)
+                    print("Paso 4 hecho")
+                
+                    _bar.update(increment=1, subtitle="Calculando PCoA") # 5
+                    time.sleep(0.2)
+                    results = pynei.do_pcoa(_dists)
+                    print("Fiiiiiiiiiiiiiiin")
+            
+                # for _step in mo.status.progress_bar(_steps, title="Calculando PCoA..."):
+                #     # print("STEP: ", _step[])
+                
+                #     if _step == "Filtrando muestras":
+                #         _samples = get_samples_with_enough_data(_vars, max_missing_rate=slider0.value)
+                #         _vars = pynei.var_filters.filter_samples(_vars, _samples)
+                
+                #     elif _step == "Filtrando variantes por datos perdidos":
+                #         _vars = pynei.filter_by_missing_data(_vars, max_allowed_missing_rate=slider1.value)
+                
+                #     elif _step == "Filtrando por LD y MAF":
+                #         _vars = pynei.filter_by_ld_and_maf(_vars, max_allowed_maf=slider2.value, min_allowed_r2=slider3.value)
+                
+                #     elif _step == "Calculando distancias Kosman":
+                #         _dists = pynei.calc_pairwise_kosman_dists(_vars)
+                    
+                #     elif _step == "Calculando PCoA":
+                #         results = pynei.do_pcoa(_dists)
+
+    else:
+        results = None
     return (results,)
+
+
+@app.cell
+def _():
+    # if run_pca_pcoa.value and button_file.value:
+    #         if dropdown_pca_pcoa.selected_key == 'PCA':
+    #             # _msg = mo.md("*Calculating PCA...*")
+    #             with mo.status.progress_bar(
+    #                 title = "Calculating PCA...", show_rate=True, show_eta=True, total=10):
+    #                 results = do_pca(
+    #                             data, 
+    #                             max_sample_gt_missing_rate = slider0.value,
+    #                             max_var_gt_missing_rate = slider1.value,
+    #                             max_allowed_maf = slider2.value,
+    #                             min_allowed_r2 = slider3.value)
+
+    #         else:
+    #             # _msg = mo.md("*Calculating PCoA...*")
+    #             with mo.status.spinner(title = "Calculating PCoA..."):
+    #                 results = do_pcoa(
+    #                             data, 
+    #                             max_sample_gt_missing_rate = slider0.value,
+    #                             max_var_gt_missing_rate = slider1.value,
+    #                             max_allowed_maf = slider2.value,
+    #                             min_allowed_r2 = slider3.value)
+
+    # else:
+    #     results = None
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    # if run_pca_pcoa.value:
+    #     if button_file.value:
+    #         if dropdown_pca_pcoa.selected_key == 'PCA':
+    #             # _msg = mo.md("*Calculating PCA...*")
+    #             with mo.status.spinner(title = "Calculating PCA..."):
+    #                 results = do_pca(
+    #                             data, 
+    #                             max_sample_gt_missing_rate = slider0.value,
+    #                             max_var_gt_missing_rate = slider1.value,
+    #                             max_allowed_maf = slider2.value,
+    #                             min_allowed_r2 = slider3.value)
+
+    #         else:
+    #             # _msg = mo.md("*Calculating PCoA...*")
+    #             with mo.status.spinner(title = "Calculating PCoA..."):
+    #                 results = do_pcoa(
+    #                             data, 
+    #                             max_sample_gt_missing_rate = slider0.value,
+    #                             max_var_gt_missing_rate = slider1.value,
+    #                             max_allowed_maf = slider2.value,
+    #                             min_allowed_r2 = slider3.value)
+
+    #     else:
+    #         results = None
+    return
 
 
 @app.cell
@@ -279,56 +441,56 @@ def _():
 @app.cell
 def _(mo, results):
     # 2D PROJECTIONS - buttons:
-    pc_index = results["projections"].axes[1] # Take the projections indexes 'PC00', 'PC01'...
+    index_proj = results["projections"].axes[1] # Take the projections indexes 'PC00', 'PC01'...
 
-    dropdown_x = mo.ui.dropdown(options=list(pc_index), value=pc_index[0], label='Horizontal axis: ')
-    dropdown_y = mo.ui.dropdown(options=list(pc_index), value=pc_index[1], label='Vertical axis: ')
-    return dropdown_x, dropdown_y, pc_index
+    dropdown_x_2d = mo.ui.dropdown(options=list(index_proj), value=index_proj[0], label='Horizontal axis: ')
+    dropdown_y_2d = mo.ui.dropdown(options=list(index_proj), value=index_proj[1], label='Vertical axis: ')
+    return dropdown_x_2d, dropdown_y_2d, index_proj
 
 
-@app.cell
-def _(dropdown_x, dropdown_y, plt, results):
+@app.cell(hide_code=True)
+def _(dropdown_x_2d, dropdown_y_2d, plt, results):
     # 2D PROJECTIONS with scatter:
 
-     # (Note: dorpdown_x.value is the same that dropdown_x.selected_key)
+     # (Note: dorpdown_x_2d.value is the same that dropdown_x_2d.selected_key)
 
-    widget_2d = plt.scatter(results["projections"][dropdown_x.selected_key], results["projections"][dropdown_y.selected_key])
+    fig_proj2D = plt.scatter(results["projections"][dropdown_x_2d.selected_key], results["projections"][dropdown_y_2d.selected_key])
     plt.title('2D Projections')
-    plt.xlabel(dropdown_x.selected_key)
-    plt.ylabel(dropdown_y.selected_key)
+    plt.xlabel(dropdown_x_2d.selected_key)
+    plt.ylabel(dropdown_y_2d.selected_key)
     plt.close()
-    return (widget_2d,)
+    return (fig_proj2D,)
 
 
 @app.cell
-def _(mo, pc_index):
+def _(index_proj, mo):
     # 3D PROJECTIONS - buttons:
-    dropdown_x_3d = mo.ui.dropdown(options=list(pc_index), value=pc_index[0], label='Horizontal axis: ')
-    dropdown_y_3d = mo.ui.dropdown(options=list(pc_index), value=pc_index[1], label='Vertical axis: ')
-    dropdown_z_3d = mo.ui.dropdown(options=list(pc_index), value=pc_index[2], label='Depth axis: ')
+    dropdown_x_3d = mo.ui.dropdown(options=list(index_proj), value=index_proj[0], label='Horizontal axis: ')
+    dropdown_y_3d = mo.ui.dropdown(options=list(index_proj), value=index_proj[1], label='Vertical axis: ')
+    dropdown_z_3d = mo.ui.dropdown(options=list(index_proj), value=index_proj[2], label='Depth axis: ')
     return dropdown_x_3d, dropdown_y_3d, dropdown_z_3d
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(dropdown_x_3d, dropdown_y_3d, dropdown_z_3d, plt, results):
     # 3d PROJECTIONS with scatter:
 
-    figure_3d = plt.figure()
-    ax = figure_3d.add_subplot(111, projection='3d')
+    fig_proj3D = plt.figure()
+    ax_proj3D = fig_proj3D.add_subplot(111, projection='3d')
 
-    scatter = ax.scatter(results["projections"][dropdown_x_3d.value], results["projections"][dropdown_y_3d.value], results["projections"][dropdown_z_3d.value])
+    scatter = ax_proj3D.scatter(results["projections"][dropdown_x_3d.value], results["projections"][dropdown_y_3d.value], results["projections"][dropdown_z_3d.value])
 
-    ax.set_title('3D Projections')
-    ax.set_xlabel(dropdown_x_3d.value)
-    ax.set_ylabel(dropdown_y_3d.value)
-    ax.set_zlabel(dropdown_z_3d.value)
+    ax_proj3D.set_title('3D Projections')
+    ax_proj3D.set_xlabel(dropdown_x_3d.value)
+    ax_proj3D.set_ylabel(dropdown_y_3d.value)
+    ax_proj3D.set_zlabel(dropdown_z_3d.value)
     plt.close()
-    return (figure_3d,)
+    return (fig_proj3D,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Category, Scatter3dWidget, pandas, results):
-    # 3D PROJECTIONS with Scatter3dWidget from Pynei:
+    # 3D PROJECTIONS with Scatter3dWidget from Jose Blanca:
 
     # 1. Unificar datos en una variable
     xyz = results["projections"].iloc[:,:3]
@@ -339,37 +501,37 @@ def _(Category, Scatter3dWidget, pandas, results):
     # 2.5. Definir etiquetas posibles en my_category: no necesario xq solo hay 1 categoría
 
     # 3. Creación del widget 3D
-    widget_3d = Scatter3dWidget(
+    fig_proj3D_JB = Scatter3dWidget(
         xyz.to_numpy(), point_ids=list(xyz.index), category=my_cat
     )
 
-    widget_3d.height = 800
-    return (widget_3d,)
+    fig_proj3D_JB.height = 800
+    return (fig_proj3D_JB,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(plt, results):
     # EXPLAINED VARIANCE:
 
-    fig, axis = plt.subplots()
+    fig_var_exp, ax_var_exp = plt.subplots()
 
     cum_var = results["explained_variance (%)"].cumsum() # The cumulative variance
 
-    cum_var.plot(kind="bar", ax=axis, color="orange", label="Cumulative variance") # cumulative variance - BARS
-    # cum_var.plot(ax=axis, color="red", marker="o", linestyle="-", label="Cumulative variance") # cumulative variance - LINES
+    cum_var.plot(kind="bar", ax=ax_var_exp, color="orange", label="Cumulative variance") # cumulative variance - BARS
+    # cum_var.plot(ax=ax_var_exp, color="red", marker="o", linestyle="-", label="Cumulative variance") # cumulative variance - LINES
 
-    results["explained_variance (%)"].plot(kind="bar", ax=axis, color="blue", label="Individual variance") # Explained variance (not cumulative)
+    results["explained_variance (%)"].plot(kind="bar", ax=ax_var_exp, color="blue", label="Individual variance") # Explained variance (not cumulative)
 
-    axis.set_title('Cumulative variance')
-    axis.set_xlabel('Principal components')
-    axis.set_ylabel('Explained variance (%)')
-    axis.legend()
+    ax_var_exp.set_title('Cumulative variance')
+    ax_var_exp.set_xlabel('Principal components')
+    ax_var_exp.set_ylabel('Explained variance (%)')
+    ax_var_exp.legend()
 
-    axis.set_yticks(range(0, 101, 10))
-    axis.grid(axis='y')
+    ax_var_exp.set_yticks(range(0, 101, 10))
+    ax_var_exp.grid(axis='y')
 
-    # fig
-    return (fig,)
+    # fig_var_exp
+    return (fig_var_exp,)
 
 
 @app.cell
@@ -382,7 +544,7 @@ def _():
 
 @app.cell
 def _(np, plt, results):
-    figSento, axSento = plt.subplots()
+    fig_princomps, ax_princomps = plt.subplots()
 
     ejex = results["princomps"].iloc[0,:]
     ejey = results["princomps"].iloc[1,:]
@@ -400,14 +562,15 @@ def _(np, plt, results):
         scale=1,
         width=0.005,
         color='red',
-        alpha=0.5
+        alpha=0.2
     )
 
-    for varkk in results["princomps"].columns:
-        ldx = results["princomps"].loc["PC00", varkk]
-        ldy = results["princomps"].loc["PC01", varkk]
+    for snip in results["princomps"].columns: # Recorrer tantas veces como columnas hayan
 
-        # axSento.arrow(
+        ldx = results["princomps"].loc["PC00", snip]
+        ldy = results["princomps"].loc["PC01", snip]
+
+        # ax_princomps.arrow(
         #     0, 0,
         #     ldx,
         #     ldy,
@@ -415,10 +578,10 @@ def _(np, plt, results):
         #     alpha=0.6
         # )
 
-        axSento.text(
+        ax_princomps.text(
             ldx,
             ldy,
-            str(varkk),
+            str(snip),
             color="red",
             fontsize=8
         )
@@ -429,140 +592,90 @@ def _(np, plt, results):
 
     plt.axhline(0, color='grey', linewidth=0.5)
     plt.axvline(0, color="grey", linewidth=0.5)
-    return (figSento,)
+
+    plt.close()
+    return (fig_princomps,)
 
 
 @app.cell
-def _(plt, results):
-    figkk, axkk = plt.subplots(figsize=(8, 6))
+def _(mo, results):
+    if results.values:
+        _msg = mo.md("""## **Results:**""")
 
-    # 👉 puntos (projections)
-    x = results["projections"]["PC00"]
-    y = results["projections"]["PC01"]
-
-    # axkk.scatter(x, y, alpha=0.5)
-
-    # 👉 loadings desde TU objeto
-    loadings = results["princomps"]
-
-
-    # 👉 top variables (más importantes en PC00)
-    # pc1 = loadings.loc["PC00"]
-
-    # top_vars = pc1.abs().sort_values(ascending=False).head(10).index
-
-    # print(loadings)
-    # escala para visualizar
-    scale = 5
-
-    for var in loadings.columns:
-        lx = loadings.loc["PC00", var]
-        ly = loadings.loc["PC01", var]
-
-        axkk.arrow(
-            0, 0,
-            lx * scale,
-            ly * scale,
-            color="red",
-            alpha=0.6
-        )
-
-        axkk.text(
-            lx * scale,
-            ly * scale,
-            str(var),
-            color="red",
-            fontsize=8
-        )
-    
-    #     print(var, " ===", lx)
-    # print(results["princomps"].iloc[0])
-
-    axkk.set_xlabel("x")
-    axkk.set_ylabel("y")
-    axkk.set_title("Rotación de ejes (PCA)")
-
-    plt.axhline(0, color="grey", linewidth=0.5)
-    plt.axvline(0, color="grey", linewidth=0.5)
-
-    plt.close(figkk)
-
-    figkk
+    _msg
     return
 
 
-@app.cell
-def _(plt, results):
+@app.cell(hide_code=True)
+def _():
+    # # VERSIÓN 1:
+    # tabs = mo.ui.tabs({
+    #     "Projections 2d scatter": mo.ui.tabs({
+    #         'Graphs': mo.hstack([fig_proj2D, mo.vstack([dropdown_x_2d, dropdown_y_2d])]),
+    #         'Data': results["projections"]
+    #         }),
 
-    kk = plt.scatter(results["princomps"][0], results["princomps"][1])
-    plt.title('What is this?')
-    # plt.xlabel()
-    # plt.ylabel()
-    # plt.close()
-    return
+    #     "Projections 3d scatter":  mo.ui.tabs({
+    #         'Graphs': mo.hstack([fig_proj3D, mo.vstack([dropdown_x_3d, dropdown_y_3d, dropdown_z_3d])]),
+    #         'Data': results["projections"]
+    #         }),
 
+    #     "Projections 3d tutor":  mo.ui.tabs({
+    #         'Graphs': fig_proj3D_JB,
+    #         'Data': results["projections"]
+    #         }),
 
-@app.cell
-def _(results):
-    results["princomps"].loc["PC00", :]
-    return
-
-
-@app.cell
-def _(results):
-    results["projections"]
+    #     "Explaines variance":  mo.ui.tabs({
+    #         'Graphs': fig_var_exp,
+    #         'Data': results["explained_variance (%)"]
+    #         }),
+    #     "Principal components": fig_princomps, 
+    #     })
+    # tabs
     return
 
 
 @app.cell
 def _(
-    dropdown_x,
+    DataMode,
+    dropdown_x_2d,
     dropdown_x_3d,
-    dropdown_y,
+    dropdown_y_2d,
     dropdown_y_3d,
     dropdown_z_3d,
-    fig,
-    figSento,
-    figure_3d,
+    fig_princomps,
+    fig_proj2D,
+    fig_proj3D,
+    fig_proj3D_JB,
+    fig_var_exp,
     mo,
+    mode,
     results,
-    widget_2d,
-    widget_3d,
 ):
-    # # VERSIÓN 1:
-    # tabs = mo.ui.tabs({
-    #     "Projections 2d scatter": mo.vstack([widget_2d, results["projections"]]),
-    #     "Projections 3d scatter": mo.vstack([figure_3d, results["projections"]]),
-    #     "Projections 3d tutor": mo.vstack([widget_3d, results["projections"]]),
-    #     "Explaines variance": mo.vstack([widget_2d, results["explained_variance (%)"]]),
-    #     # "Principal components": 
-    #     })
-    # tabs
-
-    # VERSIÓN 2:
-    tabs = mo.ui.tabs({
+    tabs_dict = {
         "Projections 2d scatter": mo.ui.tabs({
-            'Graphs': mo.hstack([widget_2d, mo.vstack([dropdown_x, dropdown_y])]),
+            'Graphs': mo.hstack([fig_proj2D, mo.vstack([dropdown_x_2d, dropdown_y_2d])]),
             'Data': results["projections"]
-            }),
-
-        "Projections 3d scatter":  mo.ui.tabs({
-            'Graphs': mo.hstack([figure_3d, mo.vstack([dropdown_x_3d, dropdown_y_3d, dropdown_z_3d])]),
+        }),
+        "Projections 3d scatter": mo.ui.tabs({
+            'Graphs': mo.hstack([fig_proj3D, mo.vstack([dropdown_x_3d, dropdown_y_3d, dropdown_z_3d])]),
             'Data': results["projections"]
-            }),
-
-        "Projections 3d tutor":  mo.ui.tabs({
-            'Graphs': widget_3d,
+        }),
+        "Projections 3d tutor": mo.ui.tabs({
+            'Graphs': fig_proj3D_JB,
             'Data': results["projections"]
-            }),
-
-        "Explaines variance":  mo.ui.tabs({
-            'Graphs': fig,
+        }),
+        "Explained variance": mo.ui.tabs({
+            'Graphs': fig_var_exp,
             'Data': results["explained_variance (%)"]
-            }),
-        "Principal components": figSento, 
-        })
-    tabs
+        }),
+    }
+
+    if mode == DataMode.QUANTITATIVE:
+        tabs_dict["Principal components"] = fig_princomps
+
+
+    mo.ui.tabs(tabs_dict)
     return
 
 
