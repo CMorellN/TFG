@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.21.1"
+__generated_with = "0.23.6"
 app = marimo.App(width="medium")
 
 
@@ -19,7 +19,18 @@ def _():
     import time # for the progress_bar in PCoA
     import io # for the uploads
 
-    return Category, Path, Scatter3dWidget, io, mo, numpy, pandas, plt, pynei
+    return (
+        Category,
+        Path,
+        Scatter3dWidget,
+        io,
+        mo,
+        numpy,
+        pandas,
+        plt,
+        pynei,
+        time,
+    )
 
 
 @app.cell
@@ -85,7 +96,7 @@ def _(Variants, get_samples_with_enough_data, pynei):
         pca = pynei.do_pca_with_vars(variants, transform_to_biallelic=True)
         return pca
 
-    return
+    return (do_pca,)
 
 
 @app.cell(hide_code=True)
@@ -168,41 +179,49 @@ def _(mo):
 
     params = mo.query_params()
 
-    mode = DataMode(params.get("mode", "quantitative")) # default value
+    mode = DataMode(params.get("mode", "dist_matrix")) # default value
     return DataMode, mode
 
 
 @app.cell(hide_code=True)
 def _(DataMode, mo, mode):
-    # For both cases of data:
-        # Web title
-        # Short web description
-        # Create the button 
-        # Add previos text to the button
+    # For the three cases of data:
+        # Web title --> _title_text
+        # Short web description --> _subtitle_text
+        # Text in the button --> _label_button
+        # Pevios text to the button --> _previous_text_button
 
     if mode == DataMode.GENOMIC:
-        _msg_title =  mo.center(mo.md("""# **VCF web space**"""))
-        _msg_subtitle = mo.center(mo.md("""This is a website to work with Variant Call Format (VCF), running a PCA or PCoA, customizing options and visualizing the results online and downloading them."""))
-        button_file = mo.ui.file(multiple=False, kind='button', label='Select VCF file')
-        show_button_file = mo.hstack([mo.md("Input VCF: "), button_file], justify="start") 
+        _title_text = 'VCF web space'
+        _subtitle_text = 'This is a website to work with Variant Call Format (VCF), running a PCA or PCoA, customizing options and visualizing the results online and downloading them.'
+        _label_button = 'Select VCF file'
+        _previous_text_button = "Input VCF: "
 
     elif mode == DataMode.QUANTITATIVE:
-        _msg_title =  mo.center(mo.md("""# **CSV web space**"""))
-        _msg_subtitle = mo.center(mo.md("""This is a website to work with Comma-Separated Values (CSV), running a PCA or PCoA, customizing options and visualizing the results online and downloading them.""")) 
-        button_file = mo.ui.file(multiple=False, kind='button', label='Select CSV file')
-        show_button_file =  mo.hstack([mo.md("Input quantitative data (CSV): "), button_file], justify="start")
+        _title_text = 'CSV web space'
+        _subtitle_text = 'This is a website to work with genomic CSV (Comma-Separated Values), running a PCA or PCoA, customizing options and visualizing the results online and downloading them. \n The expected strcuture is an array where the columns are SNPs and the rows are samples.'
+        _label_button = 'Select CSV file'
+        _previous_text_button = "Input quantitative data (CSV): "
 
     else:
-        _msg_title =  mo.center(mo.md("""# **Distance matrix web space**"""))
-        _msg_subtitle = mo.center(mo.md("""This is a place to work with distance matrices to run PCoAs faster""")) 
-        button_file = mo.ui.file(multiple=False, kind='button', label='Select distance matrix file')
-        show_button_file =  mo.hstack([mo.md("Input quantitative data (CSV or txt): "), button_file], justify="start")
+        _title_text = 'Distance matrix web space'
+        _subtitle_text = 'This is a place to work with distance matrices to run PCoAs faster'
+        _label_button = 'Select distance matrix file'
+        _previous_text_button = "Input quantitative data (CSV or txt): "
+
+    _title = mo.center(mo.md(f"#**{_title_text}**"))
+    _subtitle = mo.center(mo.md(_subtitle_text))
+
+    button_file = mo.ui.file(multiple=False, kind='button', label=_label_button, max_size = 100_000_000)
+    show_button_file =  mo.hstack([mo.md(_previous_text_button), button_file], justify="start")
+
+
     # Show the title and description:
-    mo.vstack([_msg_title, _msg_subtitle])
+    mo.vstack([_title, _subtitle])
     return button_file, show_button_file
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(show_button_file):
     show_button_file # To show the button
     return
@@ -220,60 +239,165 @@ def _(button_file, mo):
     return
 
 
-@app.cell
-def _(DataMode, button_file, io, mode, pandas, pynei):
-    if button_file.value and mode == DataMode.DIST_MATRIX:
-        _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0)
-        data_dists = pynei.dists.Distances.from_square_dists(_df)
-        # resultes = pynei.do_pcoa(data_dists)
-    return
-
-
-@app.cell
+@app.cell(hide_code=True)
 def _():
-    # if button_file.value and mode == DataMode.QUANTITATIVE:
-    #     _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0)
-    
-    #     # DataFrame tiene forma (muestras, snps) → necesitamos (snps, muestras)
-    #     _mat = _df.values.T  # shape: (num_snps, num_samples)
-    
-    #     # Convertir 0/1/2 a array 3D (snps, samples, ploidy=2)
-    #     _gt_array = numpy.stack([
-    #         numpy.where(_mat == 0, 0, numpy.where(_mat == 1, 0, 1)),  # alelo 1
-    #         numpy.where(_mat == 0, 0, numpy.where(_mat == 1, 1, 1)),  # alelo 2
-    #     ], axis=-1)
-    
-    #     data_d = pynei.Variants.from_gt_array(_gt_array, samples=list(_df.index))
+    # # PROBLEMA ARCHIVOS GRANDES:
 
-    #     resss = do_pca(data_d)
+    # Estrategia 1:
+    #     - Texto que informe del tamaño máximo aceptado (100MB) en VCF y... averiguar el de CSV
+
+    # Estrategia 2:
+    #     - Estrategia 1 + avisar de tamaño máximo de compresión y formatos
+    #     - Permitir lectura de comprimidos: VCF -> pynei (io_vcf.py) y CSV -> Pandas
+
+    #         * Nota VCF -> pynei: 
+    #             El tutor me ha dicho que si se llega a solicitar de la memoria del pc más de lo que el S.O. permite hay un mensaje de error.
+    #             Encontrar y mostrar mensaje error.
+    #             Se lee el archivo, incluso el temporary file, línea a línea, pero sí requiere toda la memoria pca y la matriz de distancias.
+    #         * Noca CSV -> Pandas:
+    #             Sugerencia de Claude: después de 
+    #                 _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0)
+    #             incluir
+    #                     VALID_CSV_EXTENSIONS = {'.csv', '.csv.gz'}
+
+    #                     _filename = button_file.value[0].name
+    #                     if not any(_filename.endswith(ext) for ext in VALID_CSV_EXTENSIONS):
+    #                         error = mo.callout(mo.md(f"Expected a **.csv** or **.csv.gz** file."), kind='danger')
+
+    #             y nos dice: "Nota que aquí no uso Path(_filename).suffix porque .suffix de archivo.csv.gz devuelve solo .gz, no .csv.gz. Por eso uso endswith directamente."
     return
 
 
 @app.cell
-def _(DataMode, Path, button_file, io, mo, mode, numpy, pandas, pynei):
-    if button_file.value and mode == DataMode.QUANTITATIVE:
-        _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0)
+def _(Path, io, mo, numpy, pandas, pynei):
+    def load_csv_dist_matrix(button_file, data, error):
+        # Expected input: square and simetric matrix because represents the distances between elements, for PCoA
+
+        _filename = button_file.value[0].name
+        _filetype = Path(_filename).suffix
+
+        # Cheking the correct format file
+        if _filetype != '.csv':
+            error = mo.md(f"Incorrect file type. You upload a '{_filetype}' and a **'.csv'** is expected.").callout(kind='danger')
     
-        # DataFrame tiene forma (muestras, snps) → necesitamos (snps, muestras)
-        _mat = _df.values.T  # shape: (num_snps, num_samples)
+        else:
+            try:
+                _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0)
+
+                # Cheking all values are numbers:
+                if not _df.apply(pandas.api.types.is_numeric_dtype).all():
+                    error = mo.callout("All columns must contain numeric values.", kind='danger')
+                
+                # Checking that is a distance matrix and not another type os csv:
+                elif _df.shape[0] != _df.shape[1]:
+                    error = mo.callout('The file must be a square matrix.', kind='alert')
+                elif not numpy.allclose(_df.values[:3, :3], _df.values[:3, :3].T):
+                    error = mo.callout('The file must be a symetric matrix.', kind='alert')
+                elif list(_df.index[:3]) != list(_df.columns[:3]):
+                    error = mo.callout('The file must be a matrix where row and column names match.', kind='alert')
+            
+                # Si finalmente funciona todo:
+                else:
+                    data = pynei.dists.Distances.from_square_dists(_df)
+        
+            # Errors from pandas.read_csv():     
+            except ValueError as e:
+                error = mo.callout(str(e), kind='alert')
     
-        # Convertir 0/1/2 a array 3D (snps, samples, ploidy=2)
-        _gt_array = numpy.stack([
-            numpy.where(_mat == 0, 0, numpy.where(_mat == 1, 0, 1)),  # alelo 1
-            numpy.where(_mat == 0, 0, numpy.where(_mat == 1, 1, 1)),  # alelo 2
-        ], axis=-1)
-    
-        data = pynei.Variants.from_gt_array(_gt_array, samples=list(_df.index))
-    # EXTRACTING SNIPS from VCF in GENOMIC mode:
+        return data, error
 
-    # pynei.vars_from_vcf needs to read from disk, not memory, so we created a temporary file (tmp) to do so.
+    return (load_csv_dist_matrix,)
 
-    _error = None
 
-    if button_file.value and mode == DataMode.GENOMIC:
+@app.cell(hide_code=True)
+def _(Path, io, mo, pandas):
+    def load_csv_quantitative2(button_file, data, error):
+        # Expected input: any kind of CSV
 
-    # ============= V C F --> G E N O M I C =============
+        _filename = button_file.value[0].name
+        _filetype = Path(_filename).suffix
 
+        if _filetype != '.csv': # format or type
+            error = mo.md(f"Incorrect file type. You upload a '{_filetype}' and a **'.csv'** is expected.").callout(kind='danger')
+
+        else: 
+            try: 
+                _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0, sep=None, engine='python')
+
+
+                # if _df.empty: # empty file
+                #     error = mo.callout("The file is empty.", kind='danger')
+
+                if not _df.apply(pandas.api.types.is_numeric_dtype).all(): # values not number
+                    error = mo.callout("All columns must contain numeric values.", kind='danger')
+
+                else:
+                    data=_df
+
+            except ValueError as e:
+                error = mo.md(str(e)).callout(kind='danger')
+
+
+        return data, error
+
+    return (load_csv_quantitative2,)
+
+
+@app.cell(hide_code=True)
+def _(Path, io, mo, numpy, pandas, pynei):
+    def load_csv_quantitative(button_file, data, error):
+        # Expected input: any kind of CSV
+
+        _filename = button_file.value[0].name
+        _filetype = Path(_filename).suffix
+
+        if _filetype != '.csv': # format or type
+            error = mo.md(f"Incorrect file type. You upload a '{_filetype}' and a **'.csv'** is expected.").callout(kind='danger')
+
+        else: 
+            _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0, sep=None, engine='python')
+
+            if _df.empty: # empty file
+                error = mo.callout("The file is empty.", kind='danger')
+
+            elif not _df.apply(pandas.api.types.is_numeric_dtype).all(): # values not number
+                error = mo.callout("All columns must contain numeric values.", kind='danger')
+
+            else: # POSIBLE ERROR CON CSV IRIS
+                _mat = _df.values.T  # shape: (num_snps, num_samples)
+
+                # Transform 0/1/2 to a 3D-array: (snps, samples, ploidy=2)
+                _gt_array = numpy.stack([
+                    numpy.where(_mat == 0, 0, numpy.where(_mat == 1, 0, 1)),  # allele 1
+                    numpy.where(_mat == 0, 0, numpy.where(_mat == 1, 1, 1)),  # allele 2
+                ], axis=-1)
+
+                # data = pynei.Variants.from_gt_array(_gt_array, samples=list(_df.index))
+
+                try: 
+                    data = pynei.Variants.from_gt_array(_gt_array, samples=list(_df.index))
+
+                except ValueError as e:
+                    error = mo.md(str(e)).callout(kind='danger')
+
+        return data, error
+
+    return
+
+
+@app.cell(hide_code=True)
+def _(Path, mo, pynei):
+    def load_vcf(button_file, data, error):
+        # Except input: a CSV file well structured.
+        # pynei.vars_from_vcf needs to read from disk, not memory, so we created a temporary file (tmp) to do so.
+
+        _filename = button_file.value[0].name
+        _filetype = Path(_filename).suffix
+
+        if _filetype != '.vcf' and _filetype != '.gz':
+            error = mo.md(f"Incorrect file type. You upload a '{_filetype}' and a **'.vcf'** or **'.gz'** is expected.").callout(kind='danger')
+
+        else:
             import tempfile
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=".vcf") as tmp:
@@ -284,21 +408,37 @@ def _(DataMode, Path, button_file, io, mo, mode, numpy, pandas, pynei):
                 data = pynei.vars_from_vcf(vcf_path=tmp_path) # Extracting variants (snips)
 
             except ValueError as e:
-                _filename = button_file.value[0].name
-                _filetype = Path(_filename).suffix
-
-                _error = mo.callout(mo.md(f"Invalid file: You have uploaded a *'{_filetype}'* file and a **'.vcf'** is expected."), kind='danger')
-
+                error = mo.md(str(e)).callout(kind='danger')
             except KeyError as e:
-                _error = mo.callout("Not enough samples.", kind='alert')
+                error = mo.callout("Not enough samples.", kind='alert')
 
-    # # ============= C S V --> DIST MATRIX=============
-    #     else:
-    #         data = button_file.contents()
-    #         _error = mo.callout(mo.md("IT WORKS"), kind='success')
+        return data, error
 
+    return (load_vcf,)
+
+
+@app.cell
+def _(
+    DataMode,
+    button_file,
+    load_csv_dist_matrix,
+    load_csv_quantitative2,
+    load_vcf,
+    mode,
+):
+    data, _error = None, None
+
+    if button_file.value:
+        if mode == DataMode.DIST_MATRIX:
+            data, _error = load_csv_dist_matrix(button_file, data, _error)
+        if mode == DataMode.QUANTITATIVE:
+            data, _error = load_csv_quantitative2(button_file, data, _error)
+        if mode == DataMode.GENOMIC:
+            data, _error = load_vcf(button_file, data, _error)
+        
     _error
-    return
+    print(data)
+    return (data,)
 
 
 @app.cell
@@ -321,20 +461,32 @@ def _(mo):
     slider3 = mo.ui.slider(start=0.1, stop=0.2, step=0.01, value=0.1, include_input=True, label='min_allowed_r2')
 
     parameters = mo.accordion({"**Show and edit parameters:** ": mo.vstack([slider0, slider1, slider2, slider3])})
-    return checkbox_pcoa_speed, dropdown_pca_pcoa, parameters
+    return (
+        checkbox_pcoa_speed,
+        dropdown_pca_pcoa,
+        parameters,
+        slider0,
+        slider1,
+        slider2,
+        slider3,
+    )
 
 
 @app.cell
 def _(DataMode, checkbox_pcoa_speed, dropdown_pca_pcoa, mo, mode, parameters):
-    # if mode == DataMode.DIST_MATRIX:
-    #     _see = parameters
+
     _see = mo.md('')
 
     if mode != DataMode.DIST_MATRIX:
-        _see = mo.vstack([dropdown_pca_pcoa, parameters])
+        _widgets = [dropdown_pca_pcoa]
 
-        if dropdown_pca_pcoa.value == 'PCoA':
-            _see = mo.vstack([dropdown_pca_pcoa, checkbox_pcoa_speed, parameters])
+        if dropdown_pca_pcoa.selected_key == 'PCoA':
+            _widgets.append(checkbox_pcoa_speed)
+
+        if mode == DataMode.GENOMIC:
+            _widgets.append(parameters)
+
+        _see = mo.vstack(_widgets)
 
     _see
     return
@@ -364,7 +516,7 @@ def _(DataMode, mo, mode):
 
     run_pca_pcoa = mo.ui.run_button(label=label, kind=color_run_pca_pcoa, full_width=True, tooltip='Click to execute the tool (PCA or PCoA) you have selected')
     run_pca_pcoa
-    return
+    return (run_pca_pcoa,)
 
 
 @app.cell(hide_code=True)
@@ -474,44 +626,203 @@ def _():
     return
 
 
-app._unparsable_cell(
-    r"""
-    # OPTION 3:
+@app.cell(hide_code=True)
+def _():
+    # # OPTION 3:
 
-    print(" ===> OPCIÓN 3 <===")
-    print("Inicio")
+    # print(" ===> OPCIÓN 3 <===")
+    # print("Inicio")
+
+    # if run_pca_pcoa.value and button_file.value:
+    #     print("inside if run")
+
+    #     if mode == DataMode.DIST_MATRIX:
+
+    #         print('mode DIST_MATRIX')
+    #         results = pynei.do_pcoa(data)
+    #         print('do_pcoa(data)')
+
+    #     else:
+    #         print('mode Genomic or Quantitative')
+
+    #         if dropdown_pca_pcoa.selected_key == 'PCA':
+    #             print("==> PCA")
+
+    #             with mo.status.spinner(title = "Calculating PCA..."):
+    #                 print("spinner")
+
+    #                 if mode==DataMode.GENOMIC: 
+    #                     results = do_pca(data, 
+    #                                      max_sample_gt_missing_rate = slider0.value,
+    #                                      max_var_gt_missing_rate = slider1.value,
+    #                                      max_allowed_maf = slider2.value,
+    #                                      min_allowed_r2 = slider3.value)
+
+    #                 if mode==DataMode.QUANTITATIVE: 
+    #                     results  = pynei.do_pca(data,
+    #                                             max_sample_gt_missing_rate = slider0.value,
+    #                                             max_var_gt_missing_rate = slider1.value,
+    #                                             max_allowed_maf = slider2.value,
+    #                                             min_allowed_r2 = slider3.value)
+
+
+    #                 # results = do_pca(
+    #                 #     data, 
+    #                 #     max_sample_gt_missing_rate = slider0.value,
+    #                 #     max_var_gt_missing_rate = slider1.value,
+    #                 #     max_allowed_maf = slider2.value,
+    #                 #     min_allowed_r2 = slider3.value)
+
+    #         else:
+    #             if mode==DataMode.GENOMIC:
+
+    #                 print("==> PCoA")
+
+    #                 desired_samples = list(data.samples[:50])
+
+    #                 print("desired samples")
+
+    #                 _variants = data # Because we alter the data
+
+    #                 with mo.status.progress_bar(total=5, title="Calculando PCoA...") as _bar:
+    #                     print("    progress")
+
+    #                     _bar.update(increment=1, subtitle="Filtering samples") # 1
+
+    #                     _samples = get_samples_with_enough_data(data, max_missing_rate=slider0.value)
+
+    #                     if desired_samples:
+    #                         _samples = [sample for sample in _samples if sample in desired_samples]
+
+    #                     _variants = pynei.var_filters.filter_samples(data, _samples)
+
+    #                     _bar.update(increment=1, subtitle="Filtering variants for lost data") # 2
+    #                     time.sleep(1)
+    #                     _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider1.value)
+
+    #                     _bar.update(increment=1, subtitle="Filtering by LD and MAF") # 3
+    #                     time.sleep(1)
+    #                     _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider2.value, min_allowed_r2=slider3.value)
+
+    #                     _bar.update(increment=1, subtitle="Calculating Kosman Distances (this will take several minutes)") # 4
+    #                     time.sleep(1)
+    #                     kosman_dists = pynei.calc_pairwise_kosman_dists(_variants, use_approx_embedding_algorithm=checkbox_pcoa_speed.value)
+
+    #                     _bar.update(increment=1, subtitle="Calculating PCoA") # 5
+    #                     time.sleep(0.2)
+    #                     results = pynei.do_pcoa(kosman_dists)
+
+    #             elif mode==DataMode.QUANTITATIVE:
+    #                 print('== Quantitative:')
+    #                 # El PCoA como toca:
+    #                 # data_dists_quant = pynei.dists.calc_euclidean_pairwise_dists(data)
+    #                 # results = pynei.do_pcoa(data_dists_quant)
+
+    #                 # El PCoA reducido para mis pruebas:
+    #                 _df50 = data.iloc[:50]  # primeras 50 filas. data es un DataFrame
+    #                 desired_data = pynei.dists.calc_euclidean_pairwise_dists(_df50)
+    #                 results = pynei.do_pcoa(desired_data)
+
+    # #                             desired_samples = reduced_data,
+    # #                             max_sample_gt_missing_rate = slider0.value,
+    # #                             max_var_gt_missing_rate = slider1.value,
+    # #                             max_allowed_maf = slider2.value,
+    # #                             min_allowed_r2 = slider3.value,
+    # #                             use_approx_embedding_algorithm=checkbox_pcoa_speed.value)
+
+
+    # else:
+    #     print("else results=None")
+    #     results = None
+
+    # print("Finish")
+    return
+
+
+@app.cell
+def _(
+    DataMode,
+    button_file,
+    checkbox_pcoa_speed,
+    data,
+    do_pca,
+    dropdown_pca_pcoa,
+    get_samples_with_enough_data,
+    mo,
+    mode,
+    pynei,
+    run_pca_pcoa,
+    slider0,
+    slider1,
+    slider2,
+    slider3,
+    time,
+):
+    # OPTION 3 - reorganiced:
+
+    print(" ===> OPCIÓN 3 - reorganiced <===")
+
 
     if run_pca_pcoa.value and button_file.value:
-        print("inside if run")
 
-        if mode == DataMode.DIST_MATRIX:
-            print('mode DIST_MATRIX')
-            results = pynei.do_pcoa(data_dists)
-            print('do_pcoa(data_dists)')
 
-        else:
-            print('mode Genomic or Quantitative')
+    # =============== DIST MATRIX ===============
+        if mode == DataMode.DIST_MATRIX: 
+            print('==> DIST_MATRIX:')
 
-            if dropdown_pca_pcoa.selected_key == 'PCA':
-                print("==> PCA")
+            results = pynei.do_pcoa(data)
+            print('=> PCOA.')
+
+
+    # =============== QUANTITATIVE ===============    
+        elif mode == DataMode.QUANTITATIVE: 
+            print('==> QUANTITATIVE:')
+
+            if dropdown_pca_pcoa.selected_key == 'PCA': 
+                print('=> PCA:')
 
                 with mo.status.spinner(title = "Calculating PCA..."):
-                    print("spinner")
-                    results = do_pca(data)
+                    print("    spinner")
 
-                    # results = do_pca(
-                    #     data, 
-                    #     max_sample_gt_missing_rate = slider0.value,
-                    #     max_var_gt_missing_rate = slider1.value,
-                    #     max_allowed_maf = slider2.value,
-                    #     min_allowed_r2 = slider3.value)
+                    results = pynei.do_pca(data)
 
-            else:
-                print("==> PCoA")
+            elif dropdown_pca_pcoa.selected_key == 'PCoA': 
+                print('=> PCoA:')
 
-                    desired_samples = list(data.samples[:50])
+                # El PCoA como toca:
+                # data_dists_quant = pynei.dists.calc_euclidean_pairwise_dists(data)
+                # results = pynei.do_pcoa(data_dists_quant)
 
-                print("desired samples")
+                # El PCoA reducido para mis pruebas:
+                print('    reduced data')
+                _df50 = data.iloc[:50]  # primeras 50 filas. data es un DataFrame
+                desired_data = pynei.dists.calc_euclidean_pairwise_dists(_df50)
+                results = pynei.do_pcoa(desired_data)
+
+
+
+    # =============== GENOMIC ===============        
+        elif mode == DataMode.GENOMIC: 
+            print('==> GENOMIC:')
+
+            if dropdown_pca_pcoa.selected_key == 'PCA': 
+                print('=> PCA:')
+
+                with mo.status.spinner(title = "Calculating PCA..."):
+                    print("    spinner")
+
+                    results = do_pca(data, 
+                                     max_sample_gt_missing_rate = slider0.value,
+                                     max_var_gt_missing_rate = slider1.value,
+                                     max_allowed_maf = slider2.value,
+                                     min_allowed_r2 = slider3.value)
+
+
+            elif dropdown_pca_pcoa.selected_key == 'PCoA':
+                print('=> PCoA:')
+
+                desired_samples = list(data.samples[:50])
+                print("    desired samples")
 
                 _variants = data # Because we alter the data
 
@@ -519,7 +830,6 @@ app._unparsable_cell(
                     print("    progress")
 
                     _bar.update(increment=1, subtitle="Filtering samples") # 1
-
                     _samples = get_samples_with_enough_data(data, max_missing_rate=slider0.value)
 
                     if desired_samples:
@@ -544,16 +854,12 @@ app._unparsable_cell(
                     results = pynei.do_pcoa(kosman_dists)
 
 
-
-
     else:
-        print("else results=None")
+        print("results=None")
         results = None
 
     print("Finish")
-    """,
-    name="_"
-)
+    return kosman_dists, results
 
 
 @app.cell(hide_code=True)
@@ -773,12 +1079,12 @@ def _(DataMode, dropdown_pca_pcoa, mode, numpy, plt, results):
 
 @app.cell
 def _(mo, results):
-    if results.values:
+    if results is not None:
         _msg = mo.md("""## **Results:**""")
+    else:
+        _msg = mo.md("")
 
     _msg
-
-    # "if results.values:" siempre truthy aunque esté vacío. Debería ser "if results is not None:"
     return
 
 
