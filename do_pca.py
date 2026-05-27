@@ -4,33 +4,25 @@ __generated_with = "0.23.6"
 app = marimo.App(width="medium")
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     # IMPORTACIONES:
     import marimo as mo 
-    import pynei # JB library
+    import pynei # PCA and PCoA. Jose Blanca library
+
+    import io # for the uploads
+    import tempfile # for GENOMIC mode
     from pathlib import Path # used for tempfile
-    import matplotlib.pyplot as plt # Para visualizar (2D al menos)
-    import mpl_toolkits.mplot3d # Para visualizar 3D
-    # import plotly.express as px
-    from scatter3d import Scatter3dWidget, Category, LabelListErrorResponse # used for 3D visualization JB
-    import pandas # used for 3D visualization JB
+
+    import pandas 
     import numpy 
     import time # for the progress_bar in PCoA
-    import io # for the uploads
 
-    return (
-        Category,
-        Path,
-        Scatter3dWidget,
-        io,
-        mo,
-        numpy,
-        pandas,
-        plt,
-        pynei,
-        time,
-    )
+
+    import matplotlib.pyplot as plt # Para visualizar (2D al menos)
+    import mpl_toolkits.mplot3d # Para visualizar 3D
+    # from scatter3d import Scatter3dWidget, Category # used for 3D interactive visualization. Jose Blanca library
+    return Path, io, mo, numpy, pandas, plt, pynei, tempfile, time
 
 
 @app.cell
@@ -55,7 +47,7 @@ def _(Variants, pynei):
     return (get_samples_with_enough_data,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(Variants, pynei):
     def calc_kosman_dists(
         variants: Variants, use_approx_embedding_algorithm=False, num_processes=1
@@ -96,10 +88,10 @@ def _(Variants, get_samples_with_enough_data, pynei):
         pca = pynei.do_pca_with_vars(variants, transform_to_biallelic=True)
         return pca
 
-    return (do_pca,)
+    return
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(Variants, calc_kosman_dists, get_samples_with_enough_data, pynei):
     def do_pcoa(
         variants: Variants,
@@ -179,7 +171,7 @@ def _(mo):
 
     params = mo.query_params()
 
-    mode = DataMode(params.get("mode", "dist_matrix")) # default value
+    mode = DataMode(params.get("mode", "genomic")) # default value
     return DataMode, mode
 
 
@@ -268,7 +260,7 @@ def _():
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Path, io, mo, numpy, pandas, pynei):
     def load_csv_dist_matrix(button_file, data, error):
         # Expected input: square and simetric matrix because represents the distances between elements, for PCoA
@@ -279,7 +271,7 @@ def _(Path, io, mo, numpy, pandas, pynei):
         # Cheking the correct format file
         if _filetype != '.csv':
             error = mo.md(f"Incorrect file type. You upload a '{_filetype}' and a **'.csv'** is expected.").callout(kind='danger')
-    
+
         else:
             try:
                 _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0)
@@ -287,7 +279,7 @@ def _(Path, io, mo, numpy, pandas, pynei):
                 # Cheking all values are numbers:
                 if not _df.apply(pandas.api.types.is_numeric_dtype).all():
                     error = mo.callout("All columns must contain numeric values.", kind='danger')
-                
+
                 # Checking that is a distance matrix and not another type os csv:
                 elif _df.shape[0] != _df.shape[1]:
                     error = mo.callout('The file must be a square matrix.', kind='alert')
@@ -295,15 +287,15 @@ def _(Path, io, mo, numpy, pandas, pynei):
                     error = mo.callout('The file must be a symetric matrix.', kind='alert')
                 elif list(_df.index[:3]) != list(_df.columns[:3]):
                     error = mo.callout('The file must be a matrix where row and column names match.', kind='alert')
-            
+
                 # Si finalmente funciona todo:
                 else:
                     data = pynei.dists.Distances.from_square_dists(_df)
-        
+
             # Errors from pandas.read_csv():     
             except ValueError as e:
                 error = mo.callout(str(e), kind='alert')
-    
+
         return data, error
 
     return (load_csv_dist_matrix,)
@@ -311,7 +303,7 @@ def _(Path, io, mo, numpy, pandas, pynei):
 
 @app.cell(hide_code=True)
 def _(Path, io, mo, pandas):
-    def load_csv_quantitative2(button_file, data, error):
+    def load_csv_quantitative(button_file, data, error):
         # Expected input: any kind of CSV
 
         _filename = button_file.value[0].name
@@ -340,53 +332,11 @@ def _(Path, io, mo, pandas):
 
         return data, error
 
-    return (load_csv_quantitative2,)
+    return (load_csv_quantitative,)
 
 
 @app.cell(hide_code=True)
-def _(Path, io, mo, numpy, pandas, pynei):
-    def load_csv_quantitative(button_file, data, error):
-        # Expected input: any kind of CSV
-
-        _filename = button_file.value[0].name
-        _filetype = Path(_filename).suffix
-
-        if _filetype != '.csv': # format or type
-            error = mo.md(f"Incorrect file type. You upload a '{_filetype}' and a **'.csv'** is expected.").callout(kind='danger')
-
-        else: 
-            _df = pandas.read_csv(io.BytesIO(button_file.contents()), index_col=0, sep=None, engine='python')
-
-            if _df.empty: # empty file
-                error = mo.callout("The file is empty.", kind='danger')
-
-            elif not _df.apply(pandas.api.types.is_numeric_dtype).all(): # values not number
-                error = mo.callout("All columns must contain numeric values.", kind='danger')
-
-            else: # POSIBLE ERROR CON CSV IRIS
-                _mat = _df.values.T  # shape: (num_snps, num_samples)
-
-                # Transform 0/1/2 to a 3D-array: (snps, samples, ploidy=2)
-                _gt_array = numpy.stack([
-                    numpy.where(_mat == 0, 0, numpy.where(_mat == 1, 0, 1)),  # allele 1
-                    numpy.where(_mat == 0, 0, numpy.where(_mat == 1, 1, 1)),  # allele 2
-                ], axis=-1)
-
-                # data = pynei.Variants.from_gt_array(_gt_array, samples=list(_df.index))
-
-                try: 
-                    data = pynei.Variants.from_gt_array(_gt_array, samples=list(_df.index))
-
-                except ValueError as e:
-                    error = mo.md(str(e)).callout(kind='danger')
-
-        return data, error
-
-    return
-
-
-@app.cell(hide_code=True)
-def _(Path, mo, pynei):
+def _(Path, mo, pynei, tempfile):
     def load_vcf(button_file, data, error):
         # Except input: a CSV file well structured.
         # pynei.vars_from_vcf needs to read from disk, not memory, so we created a temporary file (tmp) to do so.
@@ -398,7 +348,6 @@ def _(Path, mo, pynei):
             error = mo.md(f"Incorrect file type. You upload a '{_filetype}' and a **'.vcf'** or **'.gz'** is expected.").callout(kind='danger')
 
         else:
-            import tempfile
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=".vcf") as tmp:
                 tmp.write(button_file.contents()) # Transfer content
@@ -422,7 +371,7 @@ def _(
     DataMode,
     button_file,
     load_csv_dist_matrix,
-    load_csv_quantitative2,
+    load_csv_quantitative,
     load_vcf,
     mode,
 ):
@@ -432,10 +381,10 @@ def _(
         if mode == DataMode.DIST_MATRIX:
             data, _error = load_csv_dist_matrix(button_file, data, _error)
         if mode == DataMode.QUANTITATIVE:
-            data, _error = load_csv_quantitative2(button_file, data, _error)
+            data, _error = load_csv_quantitative(button_file, data, _error)
         if mode == DataMode.GENOMIC:
             data, _error = load_vcf(button_file, data, _error)
-        
+
     _error
     print(data)
     return (data,)
@@ -455,26 +404,26 @@ def _(mo):
 
     checkbox_pcoa_speed = mo.ui.checkbox(label='Click to speed up the PCoA (embedding)')
 
-    slider0 = mo.ui.slider(start=0, stop=0.3, step=0.01, value=0.05, include_input=True, label='max_sample_gt_missing_rate')
-    slider1 = mo.ui.slider(start=0, stop=0.3, step=0.01, value=0.05, include_input=True, label='max_var_gt_missing_rate')
-    slider2 = mo.ui.slider(start=0.9, stop=1, step=0.01, value=0.95, include_input=True, label='max_allowed_maf')
-    slider3 = mo.ui.slider(start=0.1, stop=0.2, step=0.01, value=0.1, include_input=True, label='min_allowed_r2')
+    slider_max_sample_missing = mo.ui.slider(start=0, stop=0.3, step=0.01, value=0.05, include_input=True, label='max_sample_gt_missing_rate')
+    slider_max_var_missing = mo.ui.slider(start=0, stop=0.3, step=0.01, value=0.05, include_input=True, label='max_var_gt_missing_rate')
+    slider_max_maf = mo.ui.slider(start=0.9, stop=1, step=0.01, value=0.95, include_input=True, label='max_allowed_maf')
+    slider_min_r2 = mo.ui.slider(start=0.1, stop=0.2, step=0.01, value=0.1, include_input=True, label='min_allowed_r2')
 
-    parameters = mo.accordion({"**Show and edit parameters:** ": mo.vstack([slider0, slider1, slider2, slider3])})
+    parameters = mo.accordion({"**Show and edit parameters:** ": mo.vstack([slider_max_sample_missing, slider_max_var_missing, slider_max_maf, slider_min_r2])})
     return (
         checkbox_pcoa_speed,
         dropdown_pca_pcoa,
         parameters,
-        slider0,
-        slider1,
-        slider2,
-        slider3,
+        slider_max_maf,
+        slider_max_sample_missing,
+        slider_max_var_missing,
+        slider_min_r2,
     )
 
 
 @app.cell
 def _(DataMode, checkbox_pcoa_speed, dropdown_pca_pcoa, mo, mode, parameters):
-
+    # Controlling 
     _see = mo.md('')
 
     if mode != DataMode.DIST_MATRIX:
@@ -531,18 +480,18 @@ def _():
     #     if dropdown_pca_pcoa.selected_key == 'PCA':
     #         results = do_pca(
     #                             data, 
-    #                             max_sample_gt_missing_rate = slider0.value,
-    #                             max_var_gt_missing_rate = slider1.value,
-    #                             max_allowed_maf = slider2.value,
-    #                             min_allowed_r2 = slider3.value)
+    #                             max_sample_gt_missing_rate = slider_max_sample_missing.value,
+    #                             max_var_gt_missing_rate = slider_max_var_missing.value,
+    #                             max_allowed_maf = slider_max_maf.value,
+    #                             min_allowed_r2 = slider_min_r2.value)
     #     else:
     #         results = do_pcoa(
     #                             data,
     #                             desired_samples = reduced_data,
-    #                             max_sample_gt_missing_rate = slider0.value,
-    #                             max_var_gt_missing_rate = slider1.value,
-    #                             max_allowed_maf = slider2.value,
-    #                             min_allowed_r2 = slider3.value,
+    #                             max_sample_gt_missing_rate = slider_max_sample_missing.value,
+    #                             max_var_gt_missing_rate = slider_max_var_missing.value,
+    #                             max_allowed_maf = slider_max_maf.value,
+    #                             min_allowed_r2 = slider_min_r2.value,
     #                             use_approx_embedding_algorithm=checkbox_pcoa_speed.value)
     # else:
     #     results = None
@@ -574,10 +523,10 @@ def _():
     #             print("spinner")
     #             results = do_pca(
     #                         data, 
-    #                         max_sample_gt_missing_rate = slider0.value,
-    #                         max_var_gt_missing_rate = slider1.value,
-    #                         max_allowed_maf = slider2.value,
-    #                         min_allowed_r2 = slider3.value)
+    #                         max_sample_gt_missing_rate = slider_max_sample_missing.value,
+    #                         max_var_gt_missing_rate = slider_max_var_missing.value,
+    #                         max_allowed_maf = slider_max_maf.value,
+    #                         min_allowed_r2 = slider_min_r2.value)
 
 
     #     else:
@@ -593,7 +542,7 @@ def _():
 
     #                 _bar.update(increment=1, subtitle="Filtering samples") # 1
 
-    #                 _samples = get_samples_with_enough_data(data, max_missing_rate=slider0.value)
+    #                 _samples = get_samples_with_enough_data(data, max_missing_rate=slider_max_sample_missing.value)
 
     #                 if desired_samples:
     #                     _samples = [sample for sample in _samples if sample in desired_samples]
@@ -602,11 +551,11 @@ def _():
 
     #                 _bar.update(increment=1, subtitle="Filtering variants for lost data") # 2
     #                 time.sleep(1)
-    #                 _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider1.value)
+    #                 _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider_max_var_missing.value)
 
     #                 _bar.update(increment=1, subtitle="Filtering by LD and MAF") # 3
     #                 time.sleep(1)
-    #                 _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider2.value, min_allowed_r2=slider3.value)
+    #                 _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider_max_maf.value, min_allowed_r2=slider_min_r2.value)
 
     #                 _bar.update(increment=1, subtitle="Calculating Kosman Distances (this will take several minutes)") # 4
     #                 time.sleep(1)
@@ -653,25 +602,25 @@ def _():
 
     #                 if mode==DataMode.GENOMIC: 
     #                     results = do_pca(data, 
-    #                                      max_sample_gt_missing_rate = slider0.value,
-    #                                      max_var_gt_missing_rate = slider1.value,
-    #                                      max_allowed_maf = slider2.value,
-    #                                      min_allowed_r2 = slider3.value)
+    #                                      max_sample_gt_missing_rate = slider_max_sample_missing.value,
+    #                                      max_var_gt_missing_rate = slider_max_var_missing.value,
+    #                                      max_allowed_maf = slider_max_maf.value,
+    #                                      min_allowed_r2 = slider_min_r2.value)
 
     #                 if mode==DataMode.QUANTITATIVE: 
     #                     results  = pynei.do_pca(data,
-    #                                             max_sample_gt_missing_rate = slider0.value,
-    #                                             max_var_gt_missing_rate = slider1.value,
-    #                                             max_allowed_maf = slider2.value,
-    #                                             min_allowed_r2 = slider3.value)
+    #                                             max_sample_gt_missing_rate = slider_max_sample_missing.value,
+    #                                             max_var_gt_missing_rate = slider_max_var_missing.value,
+    #                                             max_allowed_maf = slider_max_maf.value,
+    #                                             min_allowed_r2 = slider_min_r2.value)
 
 
     #                 # results = do_pca(
     #                 #     data, 
-    #                 #     max_sample_gt_missing_rate = slider0.value,
-    #                 #     max_var_gt_missing_rate = slider1.value,
-    #                 #     max_allowed_maf = slider2.value,
-    #                 #     min_allowed_r2 = slider3.value)
+    #                 #     max_sample_gt_missing_rate = slider_max_sample_missing.value,
+    #                 #     max_var_gt_missing_rate = slider_max_var_missing.value,
+    #                 #     max_allowed_maf = slider_max_maf.value,
+    #                 #     min_allowed_r2 = slider_min_r2.value)
 
     #         else:
     #             if mode==DataMode.GENOMIC:
@@ -689,7 +638,7 @@ def _():
 
     #                     _bar.update(increment=1, subtitle="Filtering samples") # 1
 
-    #                     _samples = get_samples_with_enough_data(data, max_missing_rate=slider0.value)
+    #                     _samples = get_samples_with_enough_data(data, max_missing_rate=slider_max_sample_missing.value)
 
     #                     if desired_samples:
     #                         _samples = [sample for sample in _samples if sample in desired_samples]
@@ -698,11 +647,11 @@ def _():
 
     #                     _bar.update(increment=1, subtitle="Filtering variants for lost data") # 2
     #                     time.sleep(1)
-    #                     _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider1.value)
+    #                     _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider_max_var_missing.value)
 
     #                     _bar.update(increment=1, subtitle="Filtering by LD and MAF") # 3
     #                     time.sleep(1)
-    #                     _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider2.value, min_allowed_r2=slider3.value)
+    #                     _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider_max_maf.value, min_allowed_r2=slider_min_r2.value)
 
     #                     _bar.update(increment=1, subtitle="Calculating Kosman Distances (this will take several minutes)") # 4
     #                     time.sleep(1)
@@ -724,10 +673,10 @@ def _():
     #                 results = pynei.do_pcoa(desired_data)
 
     # #                             desired_samples = reduced_data,
-    # #                             max_sample_gt_missing_rate = slider0.value,
-    # #                             max_var_gt_missing_rate = slider1.value,
-    # #                             max_allowed_maf = slider2.value,
-    # #                             min_allowed_r2 = slider3.value,
+    # #                             max_sample_gt_missing_rate = slider_max_sample_missing.value,
+    # #                             max_var_gt_missing_rate = slider_max_var_missing.value,
+    # #                             max_allowed_maf = slider_max_maf.value,
+    # #                             min_allowed_r2 = slider_min_r2.value,
     # #                             use_approx_embedding_algorithm=checkbox_pcoa_speed.value)
 
 
@@ -745,17 +694,16 @@ def _(
     button_file,
     checkbox_pcoa_speed,
     data,
-    do_pca,
     dropdown_pca_pcoa,
     get_samples_with_enough_data,
     mo,
     mode,
     pynei,
     run_pca_pcoa,
-    slider0,
-    slider1,
-    slider2,
-    slider3,
+    slider_max_maf,
+    slider_max_sample_missing,
+    slider_max_var_missing,
+    slider_min_r2,
     time,
 ):
     # OPTION 3 - reorganiced:
@@ -811,11 +759,7 @@ def _(
                 with mo.status.spinner(title = "Calculating PCA..."):
                     print("    spinner")
 
-                    results = do_pca(data, 
-                                     max_sample_gt_missing_rate = slider0.value,
-                                     max_var_gt_missing_rate = slider1.value,
-                                     max_allowed_maf = slider2.value,
-                                     min_allowed_r2 = slider3.value)
+                    results = pynei.do_pca(data)
 
 
             elif dropdown_pca_pcoa.selected_key == 'PCoA':
@@ -830,7 +774,7 @@ def _(
                     print("    progress")
 
                     _bar.update(increment=1, subtitle="Filtering samples") # 1
-                    _samples = get_samples_with_enough_data(data, max_missing_rate=slider0.value)
+                    _samples = get_samples_with_enough_data(data, max_missing_rate=slider_max_sample_missing.value)
 
                     if desired_samples:
                         _samples = [sample for sample in _samples if sample in desired_samples]
@@ -839,11 +783,11 @@ def _(
 
                     _bar.update(increment=1, subtitle="Filtering variants for lost data") # 2
                     time.sleep(1)
-                    _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider1.value)
+                    _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider_max_var_missing.value)
 
                     _bar.update(increment=1, subtitle="Filtering by LD and MAF") # 3
                     time.sleep(1)
-                    _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider2.value, min_allowed_r2=slider3.value)
+                    _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider_max_maf.value, min_allowed_r2=slider_min_r2.value)
 
                     _bar.update(increment=1, subtitle="Calculating Kosman Distances (this will take several minutes)") # 4
                     time.sleep(1)
@@ -876,14 +820,14 @@ def _():
     #     # print("STEP: ", _step[])
 
     #     if _step == "Filtrando muestras":
-    #         _samples = get_samples_with_enough_data(_vars, max_missing_rate=slider0.value)
+    #         _samples = get_samples_with_enough_data(_vars, max_missing_rate=slider_max_sample_missing.value)
     #         _vars = pynei.var_filters.filter_samples(_vars, _samples)
 
     #     elif _step == "Filtrando variantes por datos perdidos":
-    #         _vars = pynei.filter_by_missing_data(_vars, max_allowed_missing_rate=slider1.value)
+    #         _vars = pynei.filter_by_missing_data(_vars, max_allowed_missing_rate=slider_max_var_missing.value)
 
     #     elif _step == "Filtrando por LD y MAF":
-    #         _vars = pynei.filter_by_ld_and_maf(_vars, max_allowed_maf=slider2.value, min_allowed_r2=slider3.value)
+    #         _vars = pynei.filter_by_ld_and_maf(_vars, max_allowed_maf=slider_max_maf.value, min_allowed_r2=slider_min_r2.value)
 
     #     elif _step == "Calculando distancias Kosman":
     #         _dists = pynei.calc_pairwise_kosman_dists(_vars)
@@ -952,23 +896,23 @@ def _(dropdown_x_3d, dropdown_y_3d, dropdown_z_3d, plt, results):
 
 
 @app.cell(hide_code=True)
-def _(Category, Scatter3dWidget, pandas, results):
-    # 3D PROJECTIONS with Scatter3dWidget from Jose Blanca:
+def _():
+    # # 3D PROJECTIONS with Scatter3dWidget from Jose Blanca:
 
-    # 1. Unificar datos en una variable
-    xyz = results["projections"].iloc[:,:3]
+    # # 1. Unificar datos en una variable
+    # xyz = results["projections"].iloc[:,:3]
 
-    # 2. Crear una categoría para todos
-    my_cat = Category(pandas.Series(["Hola"]*xyz.shape[0], name="Hola"), editable=False)
+    # # 2. Crear una categoría para todos
+    # my_cat = Category(pandas.Series(["Hola"]*xyz.shape[0], name="Hola"), editable=False)
 
-    # 2.5. Definir etiquetas posibles en my_category: no necesario xq solo hay 1 categoría
+    # # 2.5. Definir etiquetas posibles en my_category: no necesario xq solo hay 1 categoría
 
-    # 3. Creación del widget 3D
-    fig_proj3D_JB = Scatter3dWidget(
-        xyz.to_numpy(), point_ids=list(xyz.index), category=my_cat
-    )
+    # # 3. Creación del widget 3D
+    # fig_proj3D_JB = Scatter3dWidget(
+    #     xyz.to_numpy(), point_ids=list(xyz.index), category=my_cat
+    # )
 
-    fig_proj3D_JB.height = 800
+    # fig_proj3D_JB.height = 800
     return
 
 
