@@ -47,7 +47,7 @@ def _(Variants, pynei):
     return (get_samples_with_enough_data,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Variants, pynei):
     def calc_kosman_dists(
         variants: Variants, use_approx_embedding_algorithm=False, num_processes=1
@@ -72,7 +72,7 @@ def _(Variants, get_samples_with_enough_data, pynei):
         max_allowed_maf=0.95,
         min_allowed_r2=0.1,
     ):
-        print("doing PCA")
+
         samples = get_samples_with_enough_data(
             variants, max_missing_rate=max_sample_gt_missing_rate
         )
@@ -88,10 +88,10 @@ def _(Variants, get_samples_with_enough_data, pynei):
         pca = pynei.do_pca_with_vars(variants, transform_to_biallelic=True)
         return pca
 
-    return
+    return (do_pca,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(Variants, calc_kosman_dists, get_samples_with_enough_data, pynei):
     def do_pcoa(
         variants: Variants,
@@ -104,7 +104,7 @@ def _(Variants, calc_kosman_dists, get_samples_with_enough_data, pynei):
         num_processes=1,
         desired_samples=None, # Solicita la lista con los individuos deseados,  no el nº
     ):
-        print("doing PCoA")
+
         samples = get_samples_with_enough_data(
             variants, max_missing_rate=max_sample_gt_missing_rate
         )
@@ -262,7 +262,7 @@ def _():
 
 @app.cell(hide_code=True)
 def _(Path, io, mo, numpy, pandas, pynei):
-    def load_csv_dist_matrix(button_file, data, error):
+    def load_csv_dist_matrix(button_file, error):
         # Expected input: square and simetric matrix because represents the distances between elements, for PCoA
 
         _filename = button_file.value[0].name
@@ -280,12 +280,12 @@ def _(Path, io, mo, numpy, pandas, pynei):
                 if not _df.apply(pandas.api.types.is_numeric_dtype).all():
                     error = mo.callout("All columns must contain numeric values.", kind='danger')
 
-                # Checking that is a distance matrix and not another type os csv:
-                elif _df.shape[0] != _df.shape[1]:
+                # Checking that is a distance matrix and not another type of csv:
+                elif _df.shape[0] != _df.shape[1]: # square matrix
                     error = mo.callout('The file must be a square matrix.', kind='alert')
-                elif not numpy.allclose(_df.values[:3, :3], _df.values[:3, :3].T):
+                elif not numpy.allclose(_df.values[:3, :3], _df.values[:3, :3].T): # symetric matrix
                     error = mo.callout('The file must be a symetric matrix.', kind='alert')
-                elif list(_df.index[:3]) != list(_df.columns[:3]):
+                elif list(_df.index[:3]) != list(_df.columns[:3]): # headers (names) match
                     error = mo.callout('The file must be a matrix where row and column names match.', kind='alert')
 
                 # Si finalmente funciona todo:
@@ -303,7 +303,7 @@ def _(Path, io, mo, numpy, pandas, pynei):
 
 @app.cell(hide_code=True)
 def _(Path, io, mo, pandas):
-    def load_csv_quantitative(button_file, data, error):
+    def load_csv_quantitative(button_file, error):
         # Expected input: any kind of CSV
 
         _filename = button_file.value[0].name
@@ -335,9 +335,9 @@ def _(Path, io, mo, pandas):
     return (load_csv_quantitative,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(Path, mo, pynei, tempfile):
-    def load_vcf(button_file, data, error):
+    def load_vcf(button_file, error):
         # Except input: a CSV file well structured.
         # pynei.vars_from_vcf needs to read from disk, not memory, so we created a temporary file (tmp) to do so.
 
@@ -379,14 +379,13 @@ def _(
 
     if button_file.value:
         if mode == DataMode.DIST_MATRIX:
-            data, _error = load_csv_dist_matrix(button_file, data, _error)
+            data, _error = load_csv_dist_matrix(button_file, _error)
         if mode == DataMode.QUANTITATIVE:
-            data, _error = load_csv_quantitative(button_file, data, _error)
+            data, _error = load_csv_quantitative(button_file, _error)
         if mode == DataMode.GENOMIC:
-            data, _error = load_vcf(button_file, data, _error)
+            data, _error = load_vcf(button_file, _error)
 
     _error
-    print(data)
     return (data,)
 
 
@@ -423,7 +422,7 @@ def _(mo):
 
 @app.cell
 def _(DataMode, checkbox_pcoa_speed, dropdown_pca_pcoa, mo, mode, parameters):
-    # Controlling 
+    # Controlling hte visualization
     _see = mo.md('')
 
     if mode != DataMode.DIST_MATRIX:
@@ -468,232 +467,13 @@ def _(DataMode, mo, mode):
     return (run_pca_pcoa,)
 
 
-@app.cell(hide_code=True)
-def _():
-    # # OPTION 1:
-
-    # reduced_data = list(data.samples[:50])
-
-
-    # if run_pca_pcoa.value and button_file.value:
-
-    #     if dropdown_pca_pcoa.selected_key == 'PCA':
-    #         results = do_pca(
-    #                             data, 
-    #                             max_sample_gt_missing_rate = slider_max_sample_missing.value,
-    #                             max_var_gt_missing_rate = slider_max_var_missing.value,
-    #                             max_allowed_maf = slider_max_maf.value,
-    #                             min_allowed_r2 = slider_min_r2.value)
-    #     else:
-    #         results = do_pcoa(
-    #                             data,
-    #                             desired_samples = reduced_data,
-    #                             max_sample_gt_missing_rate = slider_max_sample_missing.value,
-    #                             max_var_gt_missing_rate = slider_max_var_missing.value,
-    #                             max_allowed_maf = slider_max_maf.value,
-    #                             min_allowed_r2 = slider_min_r2.value,
-    #                             use_approx_embedding_algorithm=checkbox_pcoa_speed.value)
-    # else:
-    #     results = None
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    # # OPTION 2:
-
-    # print("Inicio")
-
-    # if mode == DataMode.GENOMIC or DataMode.QUANTITATIVE: 
-    #     desired_samples = list(data.samples[:50])
-    #     print("desired samples")
-
-    # # if mode == DataMode.QUANTITATIVE:
-    # #     desired_samples = data.index[:50]
-
-    # if run_pca_pcoa.value and button_file.value:
-
-    #     print("inside if run")
-
-    #     if dropdown_pca_pcoa.selected_key == 'PCA':
-
-    #         print("==> PCA")
-
-    #         with mo.status.spinner(title = "Calculating PCA..."):
-    #             print("spinner")
-    #             results = do_pca(
-    #                         data, 
-    #                         max_sample_gt_missing_rate = slider_max_sample_missing.value,
-    #                         max_var_gt_missing_rate = slider_max_var_missing.value,
-    #                         max_allowed_maf = slider_max_maf.value,
-    #                         min_allowed_r2 = slider_min_r2.value)
-
-
-    #     else:
-    #         print("==> PCoA")
-
-    #         _variants = data # Because we alter the data
-
-    #         if mode == DataMode.DIST_MATRIX:
-    #             results = pynei.do_pcoa(data)
-    #         else:
-    #             with mo.status.progress_bar(total=5, title="Calculando PCoA...") as _bar:
-    #                 print("    progress")
-
-    #                 _bar.update(increment=1, subtitle="Filtering samples") # 1
-
-    #                 _samples = get_samples_with_enough_data(data, max_missing_rate=slider_max_sample_missing.value)
-
-    #                 if desired_samples:
-    #                     _samples = [sample for sample in _samples if sample in desired_samples]
-
-    #                 _variants = pynei.var_filters.filter_samples(data, _samples)
-
-    #                 _bar.update(increment=1, subtitle="Filtering variants for lost data") # 2
-    #                 time.sleep(1)
-    #                 _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider_max_var_missing.value)
-
-    #                 _bar.update(increment=1, subtitle="Filtering by LD and MAF") # 3
-    #                 time.sleep(1)
-    #                 _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider_max_maf.value, min_allowed_r2=slider_min_r2.value)
-
-    #                 _bar.update(increment=1, subtitle="Calculating Kosman Distances (this will take several minutes)") # 4
-    #                 time.sleep(1)
-    #                 kosman_dists = pynei.calc_pairwise_kosman_dists(_variants, use_approx_embedding_algorithm=checkbox_pcoa_speed.value)
-
-    #                 _bar.update(increment=1, subtitle="Calculating PCoA") # 5
-    #                 time.sleep(0.2)
-    #                 results = pynei.do_pcoa(kosman_dists)
-
-
-
-
-    # else:
-    #     print("else results=None")
-    #     results = None
-    # print("Finish")
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    # # OPTION 3:
-
-    # print(" ===> OPCIÓN 3 <===")
-    # print("Inicio")
-
-    # if run_pca_pcoa.value and button_file.value:
-    #     print("inside if run")
-
-    #     if mode == DataMode.DIST_MATRIX:
-
-    #         print('mode DIST_MATRIX')
-    #         results = pynei.do_pcoa(data)
-    #         print('do_pcoa(data)')
-
-    #     else:
-    #         print('mode Genomic or Quantitative')
-
-    #         if dropdown_pca_pcoa.selected_key == 'PCA':
-    #             print("==> PCA")
-
-    #             with mo.status.spinner(title = "Calculating PCA..."):
-    #                 print("spinner")
-
-    #                 if mode==DataMode.GENOMIC: 
-    #                     results = do_pca(data, 
-    #                                      max_sample_gt_missing_rate = slider_max_sample_missing.value,
-    #                                      max_var_gt_missing_rate = slider_max_var_missing.value,
-    #                                      max_allowed_maf = slider_max_maf.value,
-    #                                      min_allowed_r2 = slider_min_r2.value)
-
-    #                 if mode==DataMode.QUANTITATIVE: 
-    #                     results  = pynei.do_pca(data,
-    #                                             max_sample_gt_missing_rate = slider_max_sample_missing.value,
-    #                                             max_var_gt_missing_rate = slider_max_var_missing.value,
-    #                                             max_allowed_maf = slider_max_maf.value,
-    #                                             min_allowed_r2 = slider_min_r2.value)
-
-
-    #                 # results = do_pca(
-    #                 #     data, 
-    #                 #     max_sample_gt_missing_rate = slider_max_sample_missing.value,
-    #                 #     max_var_gt_missing_rate = slider_max_var_missing.value,
-    #                 #     max_allowed_maf = slider_max_maf.value,
-    #                 #     min_allowed_r2 = slider_min_r2.value)
-
-    #         else:
-    #             if mode==DataMode.GENOMIC:
-
-    #                 print("==> PCoA")
-
-    #                 desired_samples = list(data.samples[:50])
-
-    #                 print("desired samples")
-
-    #                 _variants = data # Because we alter the data
-
-    #                 with mo.status.progress_bar(total=5, title="Calculando PCoA...") as _bar:
-    #                     print("    progress")
-
-    #                     _bar.update(increment=1, subtitle="Filtering samples") # 1
-
-    #                     _samples = get_samples_with_enough_data(data, max_missing_rate=slider_max_sample_missing.value)
-
-    #                     if desired_samples:
-    #                         _samples = [sample for sample in _samples if sample in desired_samples]
-
-    #                     _variants = pynei.var_filters.filter_samples(data, _samples)
-
-    #                     _bar.update(increment=1, subtitle="Filtering variants for lost data") # 2
-    #                     time.sleep(1)
-    #                     _variants = pynei.filter_by_missing_data(_variants, max_allowed_missing_rate=slider_max_var_missing.value)
-
-    #                     _bar.update(increment=1, subtitle="Filtering by LD and MAF") # 3
-    #                     time.sleep(1)
-    #                     _variants = pynei.filter_by_ld_and_maf(_variants, max_allowed_maf=slider_max_maf.value, min_allowed_r2=slider_min_r2.value)
-
-    #                     _bar.update(increment=1, subtitle="Calculating Kosman Distances (this will take several minutes)") # 4
-    #                     time.sleep(1)
-    #                     kosman_dists = pynei.calc_pairwise_kosman_dists(_variants, use_approx_embedding_algorithm=checkbox_pcoa_speed.value)
-
-    #                     _bar.update(increment=1, subtitle="Calculating PCoA") # 5
-    #                     time.sleep(0.2)
-    #                     results = pynei.do_pcoa(kosman_dists)
-
-    #             elif mode==DataMode.QUANTITATIVE:
-    #                 print('== Quantitative:')
-    #                 # El PCoA como toca:
-    #                 # data_dists_quant = pynei.dists.calc_euclidean_pairwise_dists(data)
-    #                 # results = pynei.do_pcoa(data_dists_quant)
-
-    #                 # El PCoA reducido para mis pruebas:
-    #                 _df50 = data.iloc[:50]  # primeras 50 filas. data es un DataFrame
-    #                 desired_data = pynei.dists.calc_euclidean_pairwise_dists(_df50)
-    #                 results = pynei.do_pcoa(desired_data)
-
-    # #                             desired_samples = reduced_data,
-    # #                             max_sample_gt_missing_rate = slider_max_sample_missing.value,
-    # #                             max_var_gt_missing_rate = slider_max_var_missing.value,
-    # #                             max_allowed_maf = slider_max_maf.value,
-    # #                             min_allowed_r2 = slider_min_r2.value,
-    # #                             use_approx_embedding_algorithm=checkbox_pcoa_speed.value)
-
-
-    # else:
-    #     print("else results=None")
-    #     results = None
-
-    # print("Finish")
-    return
-
-
 @app.cell
 def _(
     DataMode,
     button_file,
     checkbox_pcoa_speed,
     data,
+    do_pca,
     dropdown_pca_pcoa,
     get_samples_with_enough_data,
     mo,
@@ -706,10 +486,7 @@ def _(
     slider_min_r2,
     time,
 ):
-    # OPTION 3 - reorganiced:
-
-    print(" ===> OPCIÓN 3 - reorganiced <===")
-
+    # PCA or PCoA execution:
 
     if run_pca_pcoa.value and button_file.value:
 
@@ -759,7 +536,7 @@ def _(
                 with mo.status.spinner(title = "Calculating PCA..."):
                     print("    spinner")
 
-                    results = pynei.do_pca(data)
+                    results = do_pca(data)
 
 
             elif dropdown_pca_pcoa.selected_key == 'PCoA':
@@ -1071,12 +848,6 @@ def _(mo):
 
 
 @app.cell
-def _(dropdown_pca_pcoa):
-    dropdown_pca_pcoa.value
-    return
-
-
-@app.cell
 def _(
     DataMode,
     dropdown_pca_pcoa,
@@ -1176,11 +947,6 @@ def _(csv_bytes, dropdown_pca_pcoa, mo):
     else:
         _msg = mo.md('')
     _msg
-    return
-
-
-@app.cell
-def _():
     return
 
 
