@@ -4,11 +4,22 @@ __generated_with = "0.23.6"
 app = marimo.App(width="medium")
 
 
+@app.cell
+async def _():
+    # Necesario para correrlo en web (non local):
+    import sys
+    if "pyodide" in sys.modules:
+        import micropip
+        await micropip.install("/pynei-0.1.0-py3-none-any.whl")
+    return
+
+
 @app.cell(hide_code=True)
 def _():
     # IMPORTACIONES:
     import marimo as mo 
     import pynei # PCA and PCoA. Jose Blanca library
+    from pynei import Variants
 
     import io # for the uploads
     import tempfile # for GENOMIC mode
@@ -22,7 +33,7 @@ def _():
     import matplotlib.pyplot as plt # Para visualizar (2D al menos)
     import mpl_toolkits.mplot3d # Para visualizar 3D
     # from scatter3d import Scatter3dWidget, Category # used for 3D interactive visualization. Jose Blanca library
-    return Path, io, mo, numpy, pandas, plt, pynei, tempfile, time
+    return Path, Variants, io, mo, numpy, pandas, plt, pynei, tempfile, time
 
 
 @app.cell
