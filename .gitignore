@@ -1,0 +1,51 @@
+
+# Archivos generados al exportar
+
+app.html
+
+adpp.html
+
+assets/
+
+pynei-0.1.0-py3-none-any.whl
+
+favicon-16x16.png
+
+favicon-32x32.png
+
+favicon.ico
+
+favicon.ico
+
+logo.png
+
+manifest.json
+
+site.webmanifest
+
+android-chrome-192x192.png
+
+android-chrome-512x512.png
+
+apple-touch-icon.png
+
+.nojekyll
+
+# Pynei vendorizado
+
+pynei/
+
+# Archivos temporales de Python
+
+__pycache__/
+
+# Sesiones de Marimo
+
+__marimo__/session/
+
+# Archivos de prueba
+
+VCFs_prueba/
+
+archivos_pruebas/
+
