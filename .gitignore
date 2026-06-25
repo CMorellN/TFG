@@ -1,0 +1,20 @@
+# Pynei vendorizado
+pynei/
+
+# Archivos temporales de Python
+__pycache__/
+
+# Archivos de sesión
+__marimo__/
+
+# Archivos de prueba
+VCFs_prueba/
+archivos_pruebas/
+
+# Archivos de desarrollo
+*.toml
+*.lock
+*.whl
+files/
+.pytest_cache/
+.venv/
