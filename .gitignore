@@ -4,6 +4,7 @@ pynei/
 # Archivos temporales de Python
 __pycache__/
 
+
 # Archivos de sesión
 __marimo__/
 
@@ -14,7 +15,6 @@ archivos_pruebas/
 # Archivos de desarrollo
 *.toml
 *.lock
-*.whl
 files/
 .pytest_cache/
 .venv/
