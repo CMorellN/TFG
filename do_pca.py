@@ -10,7 +10,7 @@ async def _():
     import sys
     if "pyodide" in sys.modules:
         import micropip
-        await micropip.install("/pynei-0.1.0-py3-none-any.whl")
+        await micropip.install("https://cmorelln.github.io/TFG/pynei-0.1.0-py3-none-any.whl")
     return
 
 
