@@ -12,6 +12,9 @@ __marimo__/
 VCFs_prueba/
 archivos_pruebas/
 
+# Claude
+CLAUDE.md
+
 # Archivos de desarrollo
 *.toml
 *.lock
