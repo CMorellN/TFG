@@ -14,7 +14,7 @@ async def _():
     return
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     # IMPORTACIONES:
     import marimo as mo 
@@ -34,6 +34,29 @@ def _():
     import mpl_toolkits.mplot3d # Para visualizar 3D
     # from scatter3d import Scatter3dWidget, Category # used for 3D interactive visualization. Jose Blanca library
     return Path, Variants, io, mo, numpy, pandas, plt, pynei, tempfile, time
+
+
+@app.cell
+def _(mo):
+    from enum import Enum
+
+    # This is to provide 3 app webs. One for VCF data (snips) and another for qualitative data (like Iris Dataset)
+
+    class DataMode(Enum):
+
+        GENOMIC = "genomic" # VSC: uv run marimo run do_pca.py --port 2719 
+                            # añadir a url /?mode=genomic
+
+        QUANTITATIVE = "quantitative" # VSC: uv run marimo run do_pca.py --port 2720
+                                      # añadir a url /?mode=quantitative
+
+        DIST_MATRIX = "dist_matrix" # para trabjar PCoA directamente sobre la matriz de distancias
+
+
+    params = mo.query_params()
+
+    mode = DataMode(params.get("mode", "genomic")) # default value
+    return DataMode, mode
 
 
 @app.cell
@@ -143,47 +166,12 @@ def _(Variants, calc_kosman_dists, get_samples_with_enough_data, pynei):
     return
 
 
-@app.cell(hide_code=True)
-def _():
-    # mo.center(mo.md("""# **VCFs web space**"""))
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    # mo.center(mo.md("""This is a website to work with VCFs tools, customizing options, were you can visualize the results online and download them."""))
-    return
-
-
 @app.cell
 def _():
     # ================================================================================================
     # ================================ F I L E  P R E P A R A T I O N ================================
     # ================================================================================================
     return
-
-
-@app.cell
-def _(mo):
-    from enum import Enum
-
-    # This is to provide 2 app webs. One for VCF data (snips) and another for qualitative data (like Iris Dataset)
-
-    class DataMode(Enum):
-
-        GENOMIC = "genomic" # VSC: uv run marimo run do_pca.py --port 2719 
-                            # añadir a url /?mode=genomic
-
-        QUANTITATIVE = "quantitative" # VSC: uv run marimo run do_pca.py --port 2720
-                                      # añadir a url /?mode=quantitative
-
-        DIST_MATRIX = "dist_matrix" # para trabjar PCoA directamente sobre la matriz de distancias
-
-
-    params = mo.query_params()
-
-    mode = DataMode(params.get("mode", "genomic")) # default value
-    return DataMode, mode
 
 
 @app.cell(hide_code=True)
@@ -271,11 +259,12 @@ def _():
     return
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(Path, io, mo, numpy, pandas, pynei):
     def load_csv_dist_matrix(button_file, error):
-        # Expected input: square and simetric matrix because represents the distances between elements, for PCoA
-
+       # Expected input: square and simetric matrix because represents the distances between elements, for PCoA
+        data = None
+    
         _filename = button_file.value[0].name
         _filetype = Path(_filename).suffix
 
@@ -294,12 +283,13 @@ def _(Path, io, mo, numpy, pandas, pynei):
                 # Checking that is a distance matrix and not another type of csv:
                 elif _df.shape[0] != _df.shape[1]: # square matrix
                     error = mo.callout('The file must be a square matrix.', kind='alert')
+
                 elif not numpy.allclose(_df.values[:3, :3], _df.values[:3, :3].T): # symetric matrix
                     error = mo.callout('The file must be a symetric matrix.', kind='alert')
+
                 elif list(_df.index[:3]) != list(_df.columns[:3]): # headers (names) match
                     error = mo.callout('The file must be a matrix where row and column names match.', kind='alert')
 
-                # Si finalmente funciona todo:
                 else:
                     data = pynei.dists.Distances.from_square_dists(_df)
 
@@ -312,10 +302,11 @@ def _(Path, io, mo, numpy, pandas, pynei):
     return (load_csv_dist_matrix,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _(Path, io, mo, pandas):
     def load_csv_quantitative(button_file, error):
         # Expected input: any kind of CSV
+        data = None
 
         _filename = button_file.value[0].name
         _filetype = Path(_filename).suffix
@@ -351,7 +342,8 @@ def _(Path, mo, pynei, tempfile):
     def load_vcf(button_file, error):
         # Except input: a CSV file well structured.
         # pynei.vars_from_vcf needs to read from disk, not memory, so we created a temporary file (tmp) to do so.
-
+        data = None
+    
         _filename = button_file.value[0].name
         _filetype = Path(_filename).suffix
 
@@ -432,6 +424,14 @@ def _(mo):
 
 
 @app.cell
+def _(mo):
+    # PROGRAMMER CONTROL:
+    checkbox_programmer = mo.ui.checkbox(value=True, label='**Reduced sample**')
+    checkbox_programmer
+    return (checkbox_programmer,)
+
+
+@app.cell
 def _(DataMode, checkbox_pcoa_speed, dropdown_pca_pcoa, mo, mode, parameters):
     # Controlling hte visualization
     _see = mo.md('')
@@ -464,13 +464,13 @@ def _(DataMode, mo, mode):
     label = 'Run'
 
     if mode == DataMode.GENOMIC:
-        color_run_pca_pcoa = 'info'
+        color_run_pca_pcoa = 'success' # green
 
     elif mode == DataMode.QUANTITATIVE:
-        color_run_pca_pcoa = 'success'
+        color_run_pca_pcoa = 'info' # blue
 
     else: 
-        color_run_pca_pcoa = 'neutral'
+        color_run_pca_pcoa = 'neutral' # grey
         label = 'Run PCoA'
 
     run_pca_pcoa = mo.ui.run_button(label=label, kind=color_run_pca_pcoa, full_width=True, tooltip='Click to execute the tool (PCA or PCoA) you have selected')
@@ -483,6 +483,7 @@ def _(
     DataMode,
     button_file,
     checkbox_pcoa_speed,
+    checkbox_programmer,
     data,
     do_pca,
     dropdown_pca_pcoa,
@@ -504,67 +505,54 @@ def _(
 
     # =============== DIST MATRIX ===============
         if mode == DataMode.DIST_MATRIX: 
-            print('==> DIST_MATRIX:')
-
             results = pynei.do_pcoa(data)
-            print('=> PCOA.')
 
 
     # =============== QUANTITATIVE ===============    
         elif mode == DataMode.QUANTITATIVE: 
-            print('==> QUANTITATIVE:')
 
             if dropdown_pca_pcoa.selected_key == 'PCA': 
-                print('=> PCA:')
 
                 with mo.status.spinner(title = "Calculating PCA..."):
-                    print("    spinner")
-
                     results = pynei.do_pca(data)
 
             elif dropdown_pca_pcoa.selected_key == 'PCoA': 
-                print('=> PCoA:')
 
-                # El PCoA como toca:
-                # data_dists_quant = pynei.dists.calc_euclidean_pairwise_dists(data)
-                # results = pynei.do_pcoa(data_dists_quant)
-
-                # El PCoA reducido para mis pruebas:
-                print('    reduced data')
-                _df50 = data.iloc[:50]  # primeras 50 filas. data es un DataFrame
-                desired_data = pynei.dists.calc_euclidean_pairwise_dists(_df50)
-                results = pynei.do_pcoa(desired_data)
+                # For programmer control:
+                if checkbox_programmer.value:
+                    _df50 = data.iloc[:50]  # primeras 50 filas. data es un DataFrame
+                    desired_data = pynei.dists.calc_euclidean_pairwise_dists(_df50)
+                    results = pynei.do_pcoa(desired_data)
+                else:
+                    # The correct PCoA for user:
+                    data_dists_quant = pynei.dists.calc_euclidean_pairwise_dists(data)
+                    results = pynei.do_pcoa(data_dists_quant)
 
 
 
     # =============== GENOMIC ===============        
         elif mode == DataMode.GENOMIC: 
-            print('==> GENOMIC:')
 
             if dropdown_pca_pcoa.selected_key == 'PCA': 
-                print('=> PCA:')
 
                 with mo.status.spinner(title = "Calculating PCA..."):
-                    print("    spinner")
-
                     results = do_pca(data)
 
 
             elif dropdown_pca_pcoa.selected_key == 'PCoA':
-                print('=> PCoA:')
 
-                desired_samples = list(data.samples[:50])
-                print("    desired samples")
+                # For programmer control:
+                if checkbox_programmer.value:
+                    desired_samples = list(data.samples[:50])
 
                 _variants = data # Because we alter the data
 
                 with mo.status.progress_bar(total=5, title="Calculando PCoA...") as _bar:
-                    print("    progress")
 
                     _bar.update(increment=1, subtitle="Filtering samples") # 1
                     _samples = get_samples_with_enough_data(data, max_missing_rate=slider_max_sample_missing.value)
 
-                    if desired_samples:
+                    if checkbox_programmer.value: # For programmer control:
                         _samples = [sample for sample in _samples if sample in desired_samples]
 
                     _variants = pynei.var_filters.filter_samples(data, _samples)
@@ -586,11 +574,12 @@ def _(
                     results = pynei.do_pcoa(kosman_dists)
 
 
-    else:
-        print("results=None")
-        results = None
 
-    print("Finish")
+
+
+
+    else:
+        results = None
     return kosman_dists, results
 
 
@@ -820,35 +809,6 @@ def _(mo, results):
     return
 
 
-@app.cell(hide_code=True)
-def _():
-    # # VERSIÓN 1:
-    # tabs = mo.ui.tabs({
-    #     "Projections 2d scatter": mo.ui.tabs({
-    #         'Graphs': mo.hstack([fig_proj2D, mo.vstack([dropdown_x_2d, dropdown_y_2d])]),
-    #         'Data': results["projections"]
-    #         }),
-
-    #     "Projections 3d scatter":  mo.ui.tabs({
-    #         'Graphs': mo.hstack([fig_proj3D, mo.vstack([dropdown_x_3d, dropdown_y_3d, dropdown_z_3d])]),
-    #         'Data': results["projections"]
-    #         }),
-
-    #     "Projections 3d tutor":  mo.ui.tabs({
-    #         'Graphs': fig_proj3D_JB,
-    #         'Data': results["projections"]
-    #         }),
-
-    #     "Explaines variance":  mo.ui.tabs({
-    #         'Graphs': fig_var_exp,
-    #         'Data': results["explained_variance (%)"]
-    #         }),
-    #     "Principal components": fig_princomps, 
-    #     })
-    # tabs
-    return
-
-
 @app.cell
 def _(mo):
     radio_2d = mo.ui.radio(['Graphs', 'Data'], value='Graphs')
@@ -902,35 +862,6 @@ def _(
         tabs_dict["Principal components"] = fig_princomps
 
     mo.ui.tabs(tabs_dict)
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    # tabs_dict = {
-    #     "Projections 2d scatter": mo.ui.tabs({
-    #         'Graphs': mo.hstack([fig_proj2D, mo.vstack([dropdown_x_2d, dropdown_y_2d])]),
-    #         'Data': results["projections"]
-    #     }),
-    #     "Projections 3d scatter": mo.ui.tabs({
-    #         'Graphs': mo.hstack([fig_proj3D, mo.vstack([dropdown_x_3d, dropdown_y_3d, dropdown_z_3d])]),
-    #         'Data': results["projections"]
-    #     }),
-    #     "Projections 3d tutor": mo.ui.tabs({
-    #         'Graphs': fig_proj3D_JB,
-    #         'Data': results["projections"]
-    #     }),
-    #     "Explained variance": mo.ui.tabs({
-    #         'Graphs': mo.vstack([dropdown_variance, fig_var_exp]),
-    #         'Data': results["explained_variance (%)"]
-    #     }),
-    # }
-
-    # if mode == DataMode.QUANTITATIVE:
-    #     tabs_dict["Principal components"] = fig_princomps
-
-
-    # mo.ui.tabs(tabs_dict)
     return
 
 
