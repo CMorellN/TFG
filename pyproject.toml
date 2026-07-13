@@ -21,3 +21,7 @@ pynei = { path = "../Jblanca/pynei", editable=true }
 
 [tool.pytest.ini_options]
 markers = ["slow: marks tests as slow"]
+
+[tool.marimo.runtime]
+output_max_bytes = 100_000_000
+

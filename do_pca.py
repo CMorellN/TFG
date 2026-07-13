@@ -484,6 +484,8 @@ def _(
 ):
     # PCA or PCoA execution:
     results = None
+    data_dists = None
+    kosman_dists = None
 
     if run_pca_pcoa.value and button_file.value:
 
@@ -787,26 +789,10 @@ def _(
 
 
 @app.cell
-def _(data_dists, dropdown_pca_pcoa, mo):
-    # Guardar la matriz de distancias de kosman:
-    if dropdown_pca_pcoa.value == 'PCoA':
-        csv_bytes_from_quantitative = data_dists.square_dists.to_csv().encode()
-            # kosman_dists: debería ser una matriz simétrica cuya diagonal son ceros, por lo que se guarda solo la parte triangular inferior.
-            # .square_dists: convierte el vector condensado en una matriz cuadrada de formato DataFrame
-            # .to_csv(): de Dataframe a string (texto) en formato CSV
-            # .encode(): de string a bytes, xq lo pide mo.download()
-        _msg = mo.md("If you want to recalculate the **PCoA faster** on the same data in the future, you can download the distance matrix and enter it as an input file later.")
-    else: 
-        _msg = mo.md('')
-
-    _msg
-    return (csv_bytes_from_quantitative,)
-
-
-@app.cell
-def _(dropdown_pca_pcoa, kosman_dists, mo):
-    # Guardar la matriz de distancias de kosman:
-    if dropdown_pca_pcoa.value == 'PCoA':
+def _(dropdown_pca_pcoa, kosman_dists, mo, run_pca_pcoa):
+    # Download distance matrix from GENOMIC mode:
+    csv_bytes = None
+    if dropdown_pca_pcoa.value == 'PCoA'and run_pca_pcoa.value:
         csv_bytes = kosman_dists.square_dists.to_csv().encode()
             # kosman_dists: debería ser una matriz simétrica cuya diagonal son ceros, por lo que se guarda solo la parte triangular inferior.
             # .square_dists: convierte el vector condensado en una matriz cuadrada de formato DataFrame
@@ -821,9 +807,9 @@ def _(dropdown_pca_pcoa, kosman_dists, mo):
 
 
 @app.cell
-def _(csv_bytes_from_quantitative, dropdown_pca_pcoa, mo):
+def _(csv_bytes, dropdown_pca_pcoa, mo):
     if dropdown_pca_pcoa.value=='PCoA':
-        _msg = mo.download(csv_bytes_from_quantitative, filename="kosman_distances.csv", mimetype="text/csv", label='Download distance matrix')
+        _msg = mo.download(csv_bytes, filename="kosman_distances.csv", mimetype="text/csv", label='Download distance matrix')
     else:
         _msg = mo.md('')
     _msg
@@ -831,9 +817,27 @@ def _(csv_bytes_from_quantitative, dropdown_pca_pcoa, mo):
 
 
 @app.cell
-def _(csv_bytes, dropdown_pca_pcoa, mo):
+def _(data_dists, dropdown_pca_pcoa, mo, run_pca_pcoa):
+    # Download distance matrix from QUANTITATIVE mode:
+    csv_bytes_from_quantitative = None
+    if dropdown_pca_pcoa.value == 'PCoA' and run_pca_pcoa.value:
+        csv_bytes_from_quantitative = data_dists.square_dists.to_csv().encode()
+            # kosman_dists: debería ser una matriz simétrica cuya diagonal son ceros, por lo que se guarda solo la parte triangular inferior.
+            # .square_dists: convierte el vector condensado en una matriz cuadrada de formato DataFrame
+            # .to_csv(): de Dataframe a string (texto) en formato CSV
+            # .encode(): de string a bytes, xq lo pide mo.download()
+        _msg = mo.md("If you want to recalculate the **PCoA faster** on the same data in the future, you can download the distance matrix and enter it as an input file later.")
+    else: 
+        _msg = mo.md('')
+
+    _msg
+    return (csv_bytes_from_quantitative,)
+
+
+@app.cell
+def _(csv_bytes_from_quantitative, dropdown_pca_pcoa, mo):
     if dropdown_pca_pcoa.value=='PCoA':
-        _msg = mo.download(csv_bytes, filename="kosman_distances.csv", mimetype="text/csv", label='Download distance matrix')
+        _msg = mo.download(csv_bytes_from_quantitative, filename="kosman_distances.csv", mimetype="text/csv", label='Download distance matrix')
     else:
         _msg = mo.md('')
     _msg
